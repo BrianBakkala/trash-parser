@@ -1,5 +1,4 @@
 import * as holden from './holden.js';
-
 export default {
 	async fetch(request)
 	{

@@ -14,8 +14,6 @@
     "wrangler": "^3.60.3"
   },
   "dependencies": {
-    "cheerio": "^1.0.0",
-    "crawler-request": "^1.2.2",
     "pdf-lib": "^1.17.1",
     "pdf-parse": "^1.1.1"
   }

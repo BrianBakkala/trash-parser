@@ -1,5 +1,4 @@
-import pdfjsDist from 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.7.76/+esm';
-
+import { PDFDocument } from 'pdf-lib';
 
 export async function message()
 {
@@ -8,33 +7,39 @@ export async function message()
 }
 
 
+async function getPDF()
+{
+	// The URL of the PDF file (you could also extract this from the request)
+	const pdfUrl = 'https://www.holdenma.gov/sites/g/files/vyhlif4526/f/uploads/trash_collection_by_street_020420.pdf';
 
-async function getPDF() {
-	const response = await fetch("https://www.holdenma.gov/sites/g/files/vyhlif4526/f/uploads/trash_collection_by_street_020420.pdf");
+	try
+	{
+		// Fetch the PDF file from an external source (e.g., a URL)
+		const response = await fetch(pdfUrl);
+		const pdfBytes = await response.arrayBuffer();
 
-	if (!response.ok) {
-	  console.log(response);
-	  throw new Error('Network response was not ok');
+		// Load the PDF document using pdf-lib
+		const pdfDoc = await PDFDocument.load(pdfBytes);
+
+		// Extract text from each page (note: this is basic text extraction)
+		let textContent = '';
+		const pages = pdfDoc.getPages();
+		for (const page of pages)
+		{
+			const text = page.getTextContent();
+			textContent += text.items.map(item => item.str).join(' ') + '\n';
+		}
+
+		console.log(pdfDoc);
+
+		// Return the text content as a plain-text response
+		return textContent;
+
+	} catch (error)
+	{
+		return new Response(`Error processing PDF: ${error.message}`, {
+			headers: { 'Content-Type': 'text/plain' },
+		});
 	}
 
-	const pdfBytes = await response.arrayBuffer();
-	const pdfDoc = await PDFDocument.load(pdfBytes);
-
-	// Get the number of pages
-	const numPages = pdfDoc.getPageCount();
-
-	// Extract text from each page (if needed)
-	const textPromises = [];
-	for (let i = 0; i < numPages; i++) {
-	  const page = pdfDoc.getPage(i);
-	  const { text } = await page.getTextContent(); // Note: Adjusted for correct usage
-	  textPromises.push(text);
-	}
-
-	const pdfText = textPromises.join('\n');
-
-	return {
-	  numberOfPages: numPages,
-	  text: pdfText,
-	};
-  }
+}
