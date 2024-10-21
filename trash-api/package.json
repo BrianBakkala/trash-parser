@@ -1,5 +1,5 @@
 {
-  "name": "my-cloudflare-api",
+  "name": "trash-api",
   "version": "0.0.0",
   "private": true,
   "scripts": {
@@ -10,7 +10,13 @@
   },
   "devDependencies": {
     "@cloudflare/vitest-pool-workers": "^0.5.2",
-    "wrangler": "^3.60.3",
-    "vitest": "2.0.5"
+    "vitest": "2.0.5",
+    "wrangler": "^3.60.3"
+  },
+  "dependencies": {
+    "cheerio": "^1.0.0",
+    "crawler-request": "^1.2.2",
+    "pdf-lib": "^1.17.1",
+    "pdf-parse": "^1.1.1"
   }
 }

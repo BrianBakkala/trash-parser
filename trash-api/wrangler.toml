@@ -1,6 +1,6 @@
 #:schema node_modules/wrangler/config-schema.json
-name = "my-cloudflare-api"
-main = "./src/index.js"
+name = "trash-api"
+main = "src/index.js"
 compatibility_date = "2024-10-18"
 compatibility_flags = ["nodejs_compat"]
 
