@@ -1,0 +1,77 @@
+<script>
+
+    //const textLines = ["SMTWTFSSMTWTFSSMTWTFS", "T2345612312", "78910111213456789103456789", "141516171819201112131415161710111213141516", "212223242526271819202122232417181920212223", "28293031252627282924252627282930", "31", "SMTWTFSSMTWTFSSMTWTFS", "12345612341", "789101112135678910112345678", "14151617181920121314151617189101112131415", "212223242526271920212223242516171819202122", "28293026T2829303123242526272829", "30", "SMTWTFSSMTWTFSSMTWTFS", "12", "3T561231T34567", "7891011121345678910891011121314", "141516171819201112131415161715161718192021", "212223242526271819202122232422232425262728", "28293031252627282930312930", "SMTWTFSSMTWTFSSMTWTFS", "12345121", "2", "34567", "67891011123456789891011121314", "131415161718191011121314151615161718192021", "2021222324252617181920212223222324T262728", "272929303124252627T2930293031"];
+    const textLines = ["SMTWTFSSMTWTFSSMTWTFS", "T2345612312", "78910111213456789103456789", "141516171819201112131415161710111213141516", "212223242526271819202122232417181920212223", "28293031252627282924252627282930", "31", "SMTWTFSSMTWTFSSMTWTFS"];
+    getMonths(textLines);
+    function getMonths(linesArray)
+    {
+        const monthData = {};
+        const monthsInRow = 3;
+
+        const headerRowRegex = /^SMTW/g;
+        const oneDigitRegex = /^\d/g;
+        const twoDigitRegex = /^\d\d/g;
+
+        let rowIndex = 0;
+        let bigRowIndex = 0;
+        let monthIndex = 0;
+
+        for (let row of linesArray)
+        {
+            let workingRow = row;
+            let possibleNumber = 1;
+            monthData[monthIndex] = monthData[monthIndex] ?? [];
+
+            let failsafe = 10;
+            while (workingRow.length > 0 && failsafe > 0)
+            {
+                const isAHeaderRow = headerRowRegex.test(row);
+                let prevMatch = "";
+                let match = "";
+                if (!isAHeaderRow)
+                {
+
+                    console.log(workingRow);
+                    if (workingRow.startsWith("T"))
+                    {
+                        match = "T";
+                    }
+                    else if (twoDigitRegex.test(row))
+                    {
+                        match = Math.min(+row.match(oneDigitRegex)[0], +row.match(twoDigitRegex)[0]);
+                    }
+                    else if (oneDigitRegex.test(row))
+                    {
+                        match = row.match(oneDigitRegex)[0];
+                    }
+
+                    console.log(match);
+
+                    monthData[monthIndex].push(match);
+                    workingRow = workingRow.slice(match.length);
+
+
+                }
+                else
+                {
+                    bigRowIndex++;
+                }
+
+                failsafe--;
+
+            }
+
+
+            console.log(monthData);
+        }
+
+    }
+
+
+    getConsecutiveNumbers("78910111213456789103456789");
+
+    function getConsecutiveNumbers(numString)
+    {
+
+    }
+</script>
