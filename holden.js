@@ -40,13 +40,21 @@ module.exports = {
                     .split(delim).slice(1).join(delim);
 
                 // return calendarLines;
-                // return cleanedUpText;
 
-                return { ...parsing.getTrashDays(calendarLines, dayOfWeekData.day_of_week_number) };
+                // return { restOfText };
+                // return parsing.getLikelyYear(restOfText);
+
+                return { ...parsing.getTrashDays(calendarLines, dayOfWeekData.day_of_week_number, 2024) };
             }
         );
 
         return { ...dayOfWeekData, ...calendarData };
+    },
+
+    display_simple: async function (dowLetter = null)
+    {
+        const obj = await this.display(dowLetter);
+        return obj.simple;
     }
 };
 
