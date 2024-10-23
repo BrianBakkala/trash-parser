@@ -44,7 +44,7 @@ module.exports = {
                 // return { restOfText };
                 // return parsing.getLikelyYear(restOfText);
 
-                return { ...parsing.getTrashDays(calendarLines, dayOfWeekData.day_of_week_number, 2024) };
+                return { ...parsing.getTrashDays(calendarLines, dayOfWeekData.day_of_week_number, parsing.getLikelyYear(restOfText)) };
             }
         );
 
