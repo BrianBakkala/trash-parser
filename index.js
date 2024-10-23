@@ -5,5 +5,6 @@ const { get, post } = server.router;
 // Answers to any request
 server([
     get('/', ctx => 'Hello'),
-    get('/holden', async ctx => await holden.display("W")),
+    get('/holden', async ctx => await holden.display()),
+    get('/holden/:dow', async ctx => await holden.display(ctx.params.dow)),
 ]);
