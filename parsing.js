@@ -1,7 +1,41 @@
+const calendarLines = ["SMTWTFSSMTWTFSSMTWTFS", "T2345612312", "78910111213456789103456789", "141516171819201112131415161710111213141516", "212223242526271819202122232417181920212223", "28293031252627282924252627282930", "31", "SMTWTFSSMTWTFSSMTWTFS", "12345612341", "789101112135678910112345678", "14151617181920121314151617189101112131415", "212223242526271920212223242516171819202122", "28293026T2829303123242526272829", "30", "SMTWTFSSMTWTFSSMTWTFS", "123T561231T34567", "7891011121345678910891011121314", "141516171819201112131415161715161718192021", "212223242526271819202122232422232425262728", "28293031252627282930312930", "SMTWTFSSMTWTFSSMTWTFS", "12345121234567", "67891011123456789891011121314", "131415161718191011121314151615161718192021", "2021222324252617181920212223222324T262728", "272829303124252627T2930293031"];
 
-const textLines = ["SMTWTFSSMTWTFSSMTWTFS", "T2345612312", "78910111213456789103456789", "141516171819201112131415161710111213141516", "212223242526271819202122232417181920212223", "28293031252627282924252627282930", "31", "SMTWTFSSMTWTFSSMTWTFS", "12345612341", "789101112135678910112345678", "14151617181920121314151617189101112131415", "212223242526271920212223242516171819202122", "28293026T2829303123242526272829", "30", "SMTWTFSSMTWTFSSMTWTFS", "12", "3T561231T34567", "7891011121345678910891011121314", "141516171819201112131415161715161718192021", "212223242526271819202122232422232425262728", "28293031252627282930312930", "SMTWTFSSMTWTFSSMTWTFS", "12345121", "2", "34567", "67891011123456789891011121314", "131415161718191011121314151615161718192021", "2021222324252617181920212223222324T262728", "272829303124252627T2930293031"];
-// const textLines = ["2021222324252617181920212223222324T262728", "272829303124252627T2930293031"];
-getMonths(textLines);
+console.log(getTrashDays(calendarLines, 0));
+function getTrashDays(lines, dayOfWeekIndex, year = 2024)
+{
+    const holidays = getHolidays(lines);
+
+    let d = new Date(year, 0, 1);
+    let jan1DOW = d.getDay();
+    const firstDOWOffset = (dayOfWeekIndex - jan1DOW + 7) % 7;
+    const firstDOW = new Date(year, 0, 1 + firstDOWOffset);
+    console.log(firstDOW);
+}
+
+
+function getHolidays(lines, year = 2024)
+{
+    const months = getMonths(lines);
+    let holidays = [];
+
+    for (let monthIndex in months)
+    {
+        const month = months[monthIndex];
+
+        for (let dayIndex in month)
+        {
+            const day = month[dayIndex];
+
+            if (!+day && day == "T")
+            {
+                holidays.push(new Date(year, +monthIndex, (+(dayIndex) + 1)));
+            }
+        }
+    }
+
+    return holidays;
+}
+
 
 function getMonths(linesArray)
 {
@@ -10,8 +44,7 @@ function getMonths(linesArray)
     const monthData = {};
     const monthsInRow = 3;
 
-    let rowIndex = 0;
-    let bigRowIndex = 0;
+    let bigRowIndex = -1;
     let monthIndex = 0;
 
     for (let row of linesArray)
@@ -23,17 +56,43 @@ function getMonths(linesArray)
         {
             const numberArray = getConsecutiveNumbers(row);
 
-            for (let week of numberArray)
+            for (let weekIndex of Array.from(Array(monthsInRow).keys()))
             {
-                console.log(week);
+                let monthIndex = (bigRowIndex * 3) + +weekIndex;
+
+                let week;
+                let w = weekIndex;
+                do
+                {
+                    week = numberArray[w];
+                    w--;
+
+                } while (week === undefined);
+
+                monthData[monthIndex] = monthData[monthIndex] ?? [];
+                const prevLast = monthData[monthIndex][monthData[monthIndex].length - 1];
+
+                if (monthData[monthIndex].length == 0 || +(prevLast) + 1 == +week[0])
+                {
+                    monthData[monthIndex].push(...week);
+                }
+                else if (prevLast == "T" || week[0] == "T")
+                {
+                    monthData[monthIndex].push(...week);
+                }
+
             }
 
         }
+        else
+        {
+            bigRowIndex++;
+        }
     }
 
+    return monthData;
+
 }
-
-
 
 function getConsecutiveNumbers(numString)
 {
@@ -68,6 +127,11 @@ function getConsecutiveNumbers(numString)
         else if (endsWithTRegex.test(numString))
         {
             match = numString.split("T")[0];
+
+            if (!numString.startsWith("" + expectedNum))
+            {
+                arrayIndex++;
+            }
         }
         else if (numString.startsWith("" + expectedNum))
         {
@@ -137,12 +201,6 @@ function getFirstNumber(numString)
         {
             return "T";
         }
-        else if (numDigits == 2 && numString[0][1] == "T")
-        {
-            return numString[0][0];
-        }
-
-
 
         const firstNumber = numString.slice(0, numDigits);
         let secondNumber = numString.slice(numDigits, 2 * numDigits);
@@ -151,10 +209,12 @@ function getFirstNumber(numString)
             secondNumber = numString.slice(numDigits + 1, 2 * numDigits + 1);
         }
 
-
         if (firstNumber.includes("T") || secondNumber.includes("T"))
         {
-            console.log(firstNumber, secondNumber);
+            if (firstNumber.endsWith("T"))
+            {
+                return firstNumber.split("T")[0];
+            }
         }
 
         numbersErrorCorrectionData[numDigits].first_number = firstNumber;
@@ -166,11 +226,10 @@ function getFirstNumber(numString)
         }
     }
 
-    if (
-        Math.abs((+numbersErrorCorrectionData[1].first_number) - (+numbersErrorCorrectionData[1].second_number))
-        <
-        Math.abs((+numbersErrorCorrectionData[2].first_number) - (+numbersErrorCorrectionData[2].second_number))
-    )
+    const oneDigitDiff = Math.abs((+numbersErrorCorrectionData[1].first_number) - (+numbersErrorCorrectionData[1].second_number));
+    const twoDigitDiff = Math.abs((+numbersErrorCorrectionData[2].first_number) - (+numbersErrorCorrectionData[2].second_number));
+
+    if (oneDigitDiff < twoDigitDiff)
     {
         return numbersErrorCorrectionData[1].first_number;
     }
