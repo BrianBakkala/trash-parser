@@ -1,16 +1,78 @@
 const calendarLines = ["SMTWTFSSMTWTFSSMTWTFS", "T2345612312", "78910111213456789103456789", "141516171819201112131415161710111213141516", "212223242526271819202122232417181920212223", "28293031252627282924252627282930", "31", "SMTWTFSSMTWTFSSMTWTFS", "12345612341", "789101112135678910112345678", "14151617181920121314151617189101112131415", "212223242526271920212223242516171819202122", "28293026T2829303123242526272829", "30", "SMTWTFSSMTWTFSSMTWTFS", "123T561231T34567", "7891011121345678910891011121314", "141516171819201112131415161715161718192021", "212223242526271819202122232422232425262728", "28293031252627282930312930", "SMTWTFSSMTWTFSSMTWTFS", "12345121234567", "67891011123456789891011121314", "131415161718191011121314151615161718192021", "2021222324252617181920212223222324T262728", "272829303124252627T2930293031"];
 
-console.log(getTrashDays(calendarLines, 0));
+console.log(getTrashDays(calendarLines, 3));
+
 function getTrashDays(lines, dayOfWeekIndex, year = 2024)
 {
     const holidays = getHolidays(lines);
+    let trashDays = [];
+    let recyclingDays = [];
 
-    let d = new Date(year, 0, 1);
-    let jan1DOW = d.getDay();
+    const d = new Date(year, 0, 1);
+    const jan1DOW = d.getDay();
     const firstDOWOffset = (dayOfWeekIndex - jan1DOW + 7) % 7;
-    const firstDOW = new Date(year, 0, 1 + firstDOWOffset);
-    console.log(firstDOW);
+
+    let isRecyclingWeek = false;
+
+    for (let i = 0; 1 + firstDOWOffset + i < 367; i += 7)
+    {
+        const bigOffset = 1 + firstDOWOffset + i;
+        const dowDate = new Date(year, 0, bigOffset);
+
+        let dateToPush = dowDate;
+
+        for (let dOffset = 0; dOffset < dowDate.getDay(); dOffset++)
+        {
+            const date = new Date(year, 0, bigOffset - dOffset);
+            if (holidays.map(x => x.toDateString()).includes(date.toDateString()))
+            {
+                dateToPush = new Date(year, 0, bigOffset + 1);
+                break;
+            }
+        }
+
+        trashDays.push(dateToPush);
+
+        if (isRecyclingWeek)
+        {
+            recyclingDays.push(dateToPush);
+        }
+
+        isRecyclingWeek = !isRecyclingWeek;
+    }
+
+    const today = new Date();
+    const tomorrow = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
+    const yesterday = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1);
+
+    const relevantTrashDays = trashDays.filter(x => x >= yesterday).slice(0, 2);
+    const relevantRecyclingDays = recyclingDays.filter(x => x >= yesterday).slice(0, 2);
+
+    const dayBeforeCurrTrashDay = new Date(relevantTrashDays[0].getFullYear(), relevantTrashDays[0].getMonth(), relevantTrashDays[0].getDate() - 1);
+    const dayBeforeCurrRecyclingDay = new Date(relevantRecyclingDays[0].getFullYear(), relevantRecyclingDays[0].getMonth(), relevantRecyclingDays[0].getDate() - 1);
+
+
+    console.log(relevantTrashDays);
+    console.log(relevantRecyclingDays);
+
+    return {
+        today: today.toISOString().split("T")[0],
+        tomorrow: tomorrow.toISOString().split("T")[0],
+        yesterday: yesterday.toISOString().split("T")[0],
+
+        trash_day_curr: relevantTrashDays[0] ? relevantTrashDays[0].toISOString().split("T")[0] : null,
+        trash_day_curr_day_before: dayBeforeCurrTrashDay.toISOString().split("T")[0],
+        trash_day_next: relevantTrashDays[1] ? relevantTrashDays[1].toISOString().split("T")[0] : null,
+
+        recycling_day_curr: relevantRecyclingDays[0] ? relevantRecyclingDays[0].toISOString().split("T")[0] : null,
+        recycling_day_curr_day_before: dayBeforeCurrRecyclingDay.toISOString().split("T")[0],
+        recycling_day_next: relevantRecyclingDays[1] ? relevantRecyclingDays[1].toISOString().split("T")[0] : null,
+
+        trash_days: trashDays.map(x => x.toISOString().split("T")[0]),
+        recycling_days: recyclingDays.map(x => x.toISOString().split("T")[0])
+    };
 }
+
 
 
 function getHolidays(lines, year = 2024)

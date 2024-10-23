@@ -2,37 +2,31 @@
 const pdf = require('pdf-parse');
 
 module.exports = {
-    display: async function ()
+    display: async function (dowLetter = null)
     {
-        const day_of_week = await getPDFfromURL("https://www.holdenma.gov/sites/g/files/vyhlif4526/f/uploads/trash_collection_by_street_020420.pdf",
+        if (dowLetter == null)
+        {
+            dayOfWeekData = await getPDFfromURL("https://www.holdenma.gov/sites/g/files/vyhlif4526/f/uploads/trash_collection_by_street_020420.pdf",
 
-            function (data)
-            {
-                const textLines = data.text.split("\n");
-                const dowMap = { M: 1, T: 2, W: 3, Th: 4, F: 5 }; ///0-based from JS Date.getDay()
+                function (data)
+                {
+                    return data.text.match(/Hayfield La?ne?\s*(M|T|W|Th|F)/)[1];
 
-                const dowLetter = data.text.match(/Hayfield La?ne?\s*(M|T|W|Th|F)/)[1];
+                    return {
+                        potential_match: data.text.match(/Hayfield La?ne?\s*(M|T|W|Th|F)/)[1],
+                        pdf_text: data.text,
+                    };
+                }
+            );
+        }
 
-
-                return { day_of_week: dowLetter, day_of_week_number: dowMap[dowLetter] };
-
-
-
-                return {
-
-                    potential_match: data.text.match(/Hayfield La?ne?\s*(M|T|W|Th|F)/)[1],
-                    pdf_text: data.text,
-                    pdf_text_lines: textLines,
-
-                };
-            }
-        );
+        const dowMap = { M: 1, T: 2, W: 3, Th: 4, F: 5 }; ///0-based from JS Date.getDay()
+        const dayOfWeekData = { day_of_week: dowLetter, day_of_week_number: dowMap[dowLetter] };
 
         const calendarData = await getPDFfromURL("https://www.holdenma.gov/sites/g/files/vyhlif4526/f/uploads/2024.pdf",
 
             function (data)
             {
-
                 const cleanedUpText = data.text
                     .replace("272929", "272829")
                     .replace("12345121\n2\n34567", "12345121234567")
@@ -47,7 +41,7 @@ module.exports = {
                 // return calendarLines;
                 // return cleanedUpText;
 
-                return { holidays: getHolidays(calendarLines) };
+                return { ...getTrashDays(calendarLines, dayOfWeekData.day_of_week_number) };
             }
         );
 
@@ -68,6 +62,51 @@ async function getPDFfromURL(url, callback)
     });
 }
 
+
+function getTrashDays(lines, dayOfWeekIndex, year = 2024)
+{
+    const holidays = getHolidays(lines);
+    let trashDays = [];
+    let recyclingDays = [];
+
+    const d = new Date(year, 0, 1);
+    const jan1DOW = d.getDay();
+    const firstDOWOffset = (dayOfWeekIndex - jan1DOW + 7) % 7;
+
+    let isRecyclingWeek = false;
+
+    for (let i = 0; 1 + firstDOWOffset + i < 367; i += 7)
+    {
+        const bigOffset = 1 + firstDOWOffset + i;
+        const dowDate = new Date(year, 0, bigOffset);
+
+        let dateToPush = dowDate;
+
+        for (let dOffset = 0; dOffset < dowDate.getDay(); dOffset++)
+        {
+            const date = new Date(year, 0, bigOffset - dOffset);
+            if (holidays.map(x => x.toDateString()).includes(date.toDateString()))
+            {
+                dateToPush = new Date(year, 0, bigOffset + 1);
+                break;
+            }
+        }
+
+        trashDays.push(dateToPush);
+
+        if (isRecyclingWeek)
+        {
+            recyclingDays.push(dateToPush);
+        }
+
+        isRecyclingWeek = !isRecyclingWeek;
+    }
+
+    return {
+        trash_days: trashDays.map(x => x.toISOString().split("T")[0]),
+        recycling_days: recyclingDays.map(x => x.toISOString().split("T")[0])
+    };
+}
 
 function getHolidays(lines, year = 2024)
 {
@@ -91,7 +130,6 @@ function getHolidays(lines, year = 2024)
 
     return holidays;
 }
-
 
 function getMonths(linesArray)
 {
