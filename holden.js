@@ -25,7 +25,7 @@ module.exports = {
 
             function (data)
             {
-                const textLines = data.text.split("      ")[0].trim().split("\n");
+                const textLines = data.text.replace("272929", "272829").split("      ")[0].trim().split("\n");
 
                 return textLines;
             }
