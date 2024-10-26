@@ -1,5 +1,5 @@
 // endpoint
-// endpoint
+// https://bindicator-439415.ue.r.appspot.com/
 
 
 
