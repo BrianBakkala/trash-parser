@@ -3,6 +3,12 @@ const pdf = require('pdf-parse');
 const parsing = require('./parsing');
 
 module.exports = {
+    /**
+     * displays the relevant data for trash
+     *
+     * @param {String} [dowLetter=null] day of the week letter [M,T,W,Th,F]
+     * @return {obj} trash data
+     */
     display: async function (dowLetter = null)
     {
         if (dowLetter == null)
@@ -11,7 +17,7 @@ module.exports = {
 
                 function (data)
                 {
-                    return data.text.match(/Hayfield La?ne?\s*(M|T|W|Th|F)/)[1];
+                    return data.text.match(/Hayfield (Lane|Ln\.?)\s*(M|T|W|Th|F)/)[1];
 
                     return {
                         potential_match: data.text.match(/Hayfield La?ne?\s*(M|T|W|Th|F)/)[1],
@@ -55,9 +61,31 @@ module.exports = {
     {
         const obj = await this.display(dowLetter);
         return obj.simple;
+    },
+
+    display_test: async function (trashBool = "true", recyclingBool = "true")
+    {
+        const now = new Date();
+        const year = now.getFullYear();
+
+        trashBool = JSON.parse(trashBool);
+        recyclingBool = JSON.parse(recyclingBool);
+
+        return {
+            trash_simple: trashBool,
+            recycling_simple: recyclingBool,
+            year
+        };
     }
 };
 
+/**
+ *
+ *
+ * @param {String} url  of the pdf
+ * @param {function} callback
+ * @return {function} the result of the callback 
+ */
 async function getPDFfromURL(url, callback)
 {
 

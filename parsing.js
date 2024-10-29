@@ -1,5 +1,13 @@
 // const calendarLines = ["SMTWTFSSMTWTFSSMTWTFS", "T2345612312", "78910111213456789103456789", "141516171819201112131415161710111213141516", "212223242526271819202122232417181920212223", "28293031252627282924252627282930", "31", "SMTWTFSSMTWTFSSMTWTFS", "12345612341", "789101112135678910112345678", "14151617181920121314151617189101112131415", "212223242526271920212223242516171819202122", "28293026T2829303123242526272829", "30", "SMTWTFSSMTWTFSSMTWTFS", "123T561231T34567", "7891011121345678910891011121314", "141516171819201112131415161715161718192021", "212223242526271819202122232422232425262728", "28293031252627282930312930", "SMTWTFSSMTWTFSSMTWTFS", "12345121234567", "67891011123456789891011121314", "131415161718191011121314151615161718192021", "2021222324252617181920212223222324T262728", "272829303124252627T2930293031"];
 
+/**
+ *
+ *
+ * @param {array} lines string arrays of each line of the PDF
+ * @param {number} dayOfWeekIndex trash day 0-6
+ * @param {number} [year=2024]
+ * @return {obj} data representing the trash and recycling days 
+ */
 function getTrashDays(lines, dayOfWeekIndex, year = 2024)
 {
     const holidays = getHolidays(lines);
@@ -19,7 +27,7 @@ function getTrashDays(lines, dayOfWeekIndex, year = 2024)
 
         let dateToPush = dowDate;
 
-        for (let dOffset = 0; dOffset < dowDate.getDay(); dOffset++)
+        for (let dOffset = 0; dOffset < dowDate.getDay(); dOffset += 1)
         {
             const date = new Date(year, 0, bigOffset - dOffset);
             if (holidays.map(x => x.toDateString()).includes(date.toDateString()))
@@ -78,6 +86,13 @@ function getTrashDays(lines, dayOfWeekIndex, year = 2024)
     return { ...simpleObject, ...trashObject, simple: simpleObject };
 }
 
+/**
+ * Takes a 
+ *
+ * @param {array} lines string arrays of each line of the PDF
+ * @param {number} [year=2024] year to look for
+ * @return {array} array of dates, representing the holidays 
+ */
 function getHolidays(lines, year = 2024)
 {
     const months = getMonths(lines);
@@ -101,6 +116,12 @@ function getHolidays(lines, year = 2024)
     return holidays;
 }
 
+/**
+ * Scans a String and returns the most frequently occurring year in the text. The function starts with last year, and scans forward 10 years.
+ *
+ * @param {String} text
+ * @return {int} most commonly occuring year in the text
+ */
 function getLikelyYear(text)
 {
     const now = new Date();
@@ -108,7 +129,7 @@ function getLikelyYear(text)
     let highestCount = 0;
     let mostFreqYear = thisYear;
 
-    for (let y = 0; y < 10; y += 1)
+    for (let y = -1; y < 10; y += 1)
     {
         const year = thisYear + y;
 
@@ -125,6 +146,12 @@ function getLikelyYear(text)
     return +mostFreqYear;
 }
 
+/**
+ * Parses the Holden Trash PDF as a table containing 12 months
+ *
+ * @param {array} linesArray string arrays of each line of the PDF
+ * @return {array} array of json representations of each month
+ */
 function getMonths(linesArray)
 {
     const headerRowRegex = /^SMTW/g;
@@ -174,14 +201,19 @@ function getMonths(linesArray)
         }
         else
         {
-            bigRowIndex++;
+            bigRowIndex += 1;
         }
     }
 
     return monthData;
 
 }
-
+/**
+ * Takes a string of integers and attempts to interpret it as three groups of consecutive days of the month in the same week.
+ *
+ * @param {String} numString
+ * @return {array} 0-3 integer arrays
+ */
 function getConsecutiveNumbers(numString)
 {
     const oneDigitRegex = /^\d/g;
@@ -205,7 +237,7 @@ function getConsecutiveNumbers(numString)
         }
         else if (outputArray[arrayIndex]?.length == 7)
         {
-            arrayIndex++;
+            arrayIndex += 1;
             match = getFirstNumber(numString);
         }
         else if (numString.startsWith("T"))
@@ -218,7 +250,7 @@ function getConsecutiveNumbers(numString)
 
             if (!numString.startsWith("" + expectedNum))
             {
-                arrayIndex++;
+                arrayIndex += 1;
             }
         }
         else if (numString.startsWith("" + expectedNum))
@@ -229,7 +261,7 @@ function getConsecutiveNumbers(numString)
         {
             if (outputArray[arrayIndex] && outputArray[arrayIndex].length > 0 && match != "T")
             {
-                arrayIndex++;
+                arrayIndex += 1;
                 match = getFirstNumber(numString);
             }
             else if (twoDigitRegex.test(numString))
@@ -271,6 +303,12 @@ function getConsecutiveNumbers(numString)
     }
 }
 
+/**
+ * Takes a string of integers and attempts to find the first number, interpreting the string as a list of consecutive days of the month.
+ *
+ * @param {*} numString
+ * @return {*} 
+ */
 function getFirstNumber(numString)
 {
     if (numString.length < 4)
