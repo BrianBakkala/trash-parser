@@ -5,6 +5,8 @@
 
 const db = require('./db.js');
 const holden = require('./holden');
+const papi = require('./particle_api');
+
 const server = require('server');
 const { get, post } = server.router;
 const { header } = server.reply;
@@ -67,6 +69,8 @@ server({ security: { csrf: false } }, [
     get('/hooks/check-schedule', ctx => jsonHeader, async ctx => await db.checkSchedule()),
     get('/hooks/check-schedule/force', ctx => jsonHeader, async ctx => await db.checkSchedule(true)),
     get('/hooks/generate-days', ctx => jsonHeader, async ctx => await db.generateTrashRecycleDays()),
+
+    get('/papi/test', ctx => jsonHeader, async ctx => await papi.test()),
 
 
 
