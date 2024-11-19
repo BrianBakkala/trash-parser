@@ -17,10 +17,10 @@ module.exports = {
 
                 function (data)
                 {
-                    return data.text.match(/Hayfield (Lane|Ln\.?)\s*(M|T|W|Th|F)/)[1];
+                    return data.text.match(/Hayfield (Lane|Ln\.?)\s*(M|T|W|Th|F)/)[2];
 
                     return {
-                        potential_match: data.text.match(/Hayfield La?ne?\s*(M|T|W|Th|F)/)[1],
+                        potential_match: data.text.match(/Hayfield La?ne?\s*(M|T|W|Th|F)/)[2],
                         pdf_text: data.text,
                     };
                 }
