@@ -1,0 +1,18 @@
+{
+    "households":{
+        "0a10aced202194944a058a88":"holden_bakkala",
+        "u5hflane":"holden_bakkala"
+    },
+    "trash_days":{
+        "holden_bakkala":"Wed"
+    },
+    "trash_schedule":{
+        "holden_bakkala":"weekly"
+    },
+    "recycle_days":{
+        "holden_bakkala":"Wed"
+    },
+    "recycle_schedule":{
+        "holden_bakkala":"biweekly first"
+    }
+}

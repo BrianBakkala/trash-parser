@@ -4,7 +4,8 @@ const { Buffer } = require('node:buffer');
 const controller = new AbortController();
 const { signal } = controller;
 
-const dbFile = "./db.json";
+const liveDBFile = "./db_dynamic.json";
+const staticDBFile = "./db_static.json";
 
 module.exports = {
 
@@ -42,13 +43,12 @@ module.exports = {
         // Set the value at the final layer
         currentLayer[layers[layers.length - 1]] = value;
 
-        await writeFile(dbFile, JSON.stringify(database), { signal });
+        await writeFile(liveDBFile, JSON.stringify(database), { signal });
 
-        return {};
         return { [layers.join(".")]: value };
     },
 
-    getAll: async function ()
+    getAll: async function (dbFile = liveDBFile)
     {
         try
         {
@@ -64,6 +64,32 @@ module.exports = {
     },
 
 
+
+    checkSchedule: async function ()
+    {
+        const d = new Date();
+        const dateString = d.toDateString();
+        if (d.getHours() != 12)
+        {
+            // return false;
+        }
+
+        const scheduleCheckedDate = await this.get('schedule_checked');
+        // if (scheduleCheckedDate.result != dateString)
+        if (1 == 1)
+        {
+            const staticDB = await this.getAll(staticDBFile);
+            return staticDB;
+
+
+            await this.set(dateString, 'schedule_checked');
+        }
+
+
+        return { result: "s" };
+    },
+
+
     /**
      *
      *
@@ -75,9 +101,15 @@ module.exports = {
     {
         if (value == null)
         {
-            value = !this.get('button_states', unitId, category);
+            let currentVal = await this.get('button_states', unitId, category);
+            value = !currentVal.result;
         }
         return this.set(value, 'button_states', unitId, category);
+    },
+
+    getButtonState: async function (unitId, category)
+    {
+        return await this.get('button_states', unitId, category);
     }
 };
 

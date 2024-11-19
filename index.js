@@ -3,7 +3,7 @@
 
 
 
-const db = require('./db');
+const db = require('./db.js');
 const holden = require('./holden');
 const server = require('server');
 const { get, post } = server.router;
@@ -12,7 +12,7 @@ const { header } = server.reply;
 const jsonHeader = header('Content-Type', 'application/json');
 
 // Answers to any request
-server([
+server({ security: { csrf: false } }, [
     get('/', ctx => jsonHeader, ctx => 'Hello'),
     get('/favicon.ico', ctx => jsonHeader, ctx => 'Hello'),
     get('/holden', ctx => jsonHeader, async ctx => await holden.display()),
@@ -30,7 +30,42 @@ server([
     get('/db/get/:a/:b', ctx => jsonHeader, async ctx => await db.get(ctx.params.a, ctx.params.b)),
 
     get('/db/get-all', ctx => jsonHeader, async ctx => await db.getAll()),
-    get('/db/set-test', ctx => jsonHeader, async ctx => await db.setButtonState('u1234', "trash", false)),
+
+    get('/db/set-test', ctx => jsonHeader, async ctx => await db.setButtonState('u1234', "trash")),
+
+    // get('/hooks/check-schedule/:photonid', ctx => jsonHeader, async ctx => await db.checkSchedule('u1234', "trash")),
+
+    post('/hooks/set-button-state', ctx => jsonHeader,
+        async function (ctx)
+        {
+            if (ctx.data["8LplHeuLKUnwogNYuxOD1YioIQ08WyN39jkiN9JQ6Zsyk7dn2V"] == "lBdUeV2wS4IhVjhlcZxoAujMMVOCydUC2VNXqaP63r6e90cAJL")
+            {
+                await db.setButtonState(ctx.data.coreid, ctx.data.data);
+                return { success: true };
+            }
+            else
+            {
+                return { success: false, reason: "Security check failed." };
+            }
+        }
+    ),
+    post('/hooks/get-button-state', ctx => jsonHeader,
+        async function (ctx)
+        {
+            if (ctx.data["8LplHeuLKUnwogNYuxOD1YioIQ08WyN39jkiN9JQ6Zsyk7dn2V"] == "lBdUeV2wS4IhVjhlcZxoAujMMVOCydUC2VNXqaP63r6e90cAJL")
+            {
+                return await db.getButtonState(ctx.data.coreid, ctx.data.data);
+            }
+            else
+            {
+                return { success: false, reason: "Security check failed." };
+            }
+        }
+    ),
+
+
+    get('/db/check-schedule', ctx => jsonHeader, async ctx => await db.checkSchedule()),
+
 
 
 ]);
