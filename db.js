@@ -3,6 +3,10 @@ const { resolve } = require('node:path');
 const { Buffer } = require('node:buffer');
 const controller = new AbortController();
 const { signal } = controller;
+const holden = require('./holden');
+const parsing = require('./parsing');
+const calendar = require('./calendar');
+
 
 const liveDBFile = "./db_dynamic.json";
 const staticDBFile = "./db_static.json";
@@ -27,9 +31,9 @@ module.exports = {
         return { result };
     },
 
-    set: async function (value, ...layers)
+    setGeneric: async function (db, value, ...layers)
     {
-        let database = await this.getAll();
+        let database = await this.getAll(db);
 
         // Traverse the layers dynamically
         let currentLayer = database;
@@ -43,10 +47,22 @@ module.exports = {
         // Set the value at the final layer
         currentLayer[layers[layers.length - 1]] = value;
 
-        await writeFile(liveDBFile, JSON.stringify(database), { signal });
+        await writeFile(db, JSON.stringify(database), { signal });
 
         return { [layers.join(".")]: value };
     },
+
+    set: async function (value, ...layers)
+    {
+        return this.setGeneric(liveDBFile, value, ...layers);
+    },
+
+    setStatic: async function (value, ...layers)
+    {
+        return this.setGeneric(staticDBFile, value, ...layers);
+    },
+
+
 
     getAll: async function (dbFile = liveDBFile)
     {
@@ -79,6 +95,8 @@ module.exports = {
         if (1 == 1)
         {
             const staticDB = await this.getAll(staticDBFile);
+            const households = Object.values(staticDB.households);
+
             return staticDB;
 
 
@@ -110,6 +128,40 @@ module.exports = {
     getButtonState: async function (unitId, category)
     {
         return await this.get('button_states', unitId, category);
-    }
-};
+    },
 
+
+    generateTrashDays: async function ()
+    {
+        const staticDB = await this.getAll(staticDBFile);
+        const households = [...new Set(Object.values(staticDB.households))];
+        const holdenDB = await holden.display();
+        console.log(households);
+
+        for (let household of households)
+        {
+            console.log(household);
+            if (household == "holden_bakkala")
+            {
+                await this.setStatic(holdenDB.trash_days, "trash_days", household);
+                await this.setStatic(holdenDB.recycling_days, "recycle_days", household);
+            }
+
+            else
+            {
+                const trashDays = calendar.getDays(staticDB.trash_dotw[household], staticDB.trash_scheme[household]);
+                await this.setStatic(trashDays.days, "trash_days", household);
+
+                const recycleDays = calendar.getDays(staticDB.recycle_dotw[household], staticDB.recycle_scheme[household]);
+                await this.setStatic(recycleDays.days, "recycle_days", household);
+
+            }
+        }
+
+    }
+
+
+
+
+
+}; 

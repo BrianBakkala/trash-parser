@@ -64,7 +64,7 @@ server({ security: { csrf: false } }, [
     ),
 
 
-    get('/db/check-schedule', ctx => jsonHeader, async ctx => await db.checkSchedule()),
+    get('/db/check-schedule', ctx => jsonHeader, async ctx => await db.generateTrashDays()),
 
 
 

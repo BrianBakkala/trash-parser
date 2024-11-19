@@ -27,7 +27,7 @@ module.exports = {
             );
         }
 
-        const dowMap = { M: 1, T: 2, W: 3, Th: 4, F: 5 }; ///0-based from JS Date.getDay()
+        const dowMap = { Su: 0, M: 1, T: 2, W: 3, Th: 4, F: 5, Sa: 6 }; ///0-based from JS Date.getDay()
         const dayOfWeekData = { day_of_week: dowLetter, day_of_week_number: dowMap[dowLetter] };
 
         const calendarData = await getPDFfromURL("https://www.holdenma.gov/sites/g/files/vyhlif4526/f/uploads/2024.pdf",
