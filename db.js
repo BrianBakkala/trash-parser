@@ -61,7 +61,10 @@ module.exports = {
         for (let i = 0; i < destinationLayers.length - 1; i++)
         {
             // Create the layer if it doesn't exist
-            currentLayer[destinationLayers[i]] = currentLayer[destinationLayers[i]] ?? {};
+            if (!currentLayer.hasOwnProperty(destinationLayers[i]))
+            {
+                currentLayer[destinationLayers[i]] = {};
+            }
             currentLayer = currentLayer[destinationLayers[i]];
         }
 
@@ -126,7 +129,7 @@ module.exports = {
             let currentVal = await this.get('button_states', photonID, category);
             value = !currentVal.result;
         }
-        return this.set(value, 'button_states', photonID, category);
+        return await this.set(value, 'button_states', photonID, category);
     },
 
     setAllButtonStates: async function (household, category, value = null)
@@ -136,7 +139,7 @@ module.exports = {
         {
             if (householdsMap[photonID] == household)
             {
-                this.setButtonState(photonID, category, value);
+                await this.setButtonState(photonID, category, value);
             }
         }
     },
@@ -169,7 +172,7 @@ module.exports = {
         console.log(scheduleCheckedDate);
 
         let result = [];
-        if (force || scheduleCheckedDate.result != todayDateString)
+        if (force || scheduleCheckedDate && scheduleCheckedDate.result && scheduleCheckedDate.result != todayDateString)
         {
             const households = await this.getUniqueHouseholds();
 
@@ -180,8 +183,6 @@ module.exports = {
             for (let householdIndex in households)
             {
                 const household = households[householdIndex];
-                console.log(trashDays[household]);
-                console.log(todayDateString);
                 if (trashDays[household] && trashDays[household].includes(todayDateString))
                 {
 
