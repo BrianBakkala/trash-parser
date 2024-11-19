@@ -7,15 +7,31 @@ const holden = require('./holden');
 const parsing = require('./parsing');
 const calendar = require('./calendar');
 
-
-const liveDBFile = "./db_dynamic.json";
-const staticDBFile = "./db_static.json";
+const LIVE_DB_FILE = "./db_dynamic.json";
+const STATIC_DB_FILE = "./db_static.json";
+let preloadStaticDB = {};
 
 module.exports = {
 
-    get: async function (...destinationLayers)
+    /*******GET AND SET************/
+    getGeneric: async function (db, ...destinationLayers)
     {
-        const database = await this.getAll();
+        let database;
+
+        if (db == STATIC_DB_FILE)
+        {
+            if (Object.keys(preloadStaticDB).length === 0)
+            {
+                //preload static db if empty
+                preloadStaticDB = await this.getAll(db);
+            }
+
+            database = preloadStaticDB;
+        }
+        else
+        {
+            database = await this.getAll(db);
+        }
 
         // Loop through the destinationLayer to find the nested data
         let result = database;
@@ -28,43 +44,59 @@ module.exports = {
             result = result[layer]; // Move deeper into the next layer
         }
 
-        return { result };
+        if (result.constructor !== Object)
+        {
+            return { result };
+        }
+
+        return result;
     },
 
-    setGeneric: async function (db, value, ...layers)
+    setGeneric: async function (db, value, ...destinationLayers)
     {
         let database = await this.getAll(db);
 
-        // Traverse the layers dynamically
+        // Traverse the destinationLayers dynamically
         let currentLayer = database;
-        for (let i = 0; i < layers.length - 1; i++)
+        for (let i = 0; i < destinationLayers.length - 1; i++)
         {
             // Create the layer if it doesn't exist
-            currentLayer[layers[i]] = currentLayer[layers[i]] ?? {};
-            currentLayer = currentLayer[layers[i]];
+            currentLayer[destinationLayers[i]] = currentLayer[destinationLayers[i]] ?? {};
+            currentLayer = currentLayer[destinationLayers[i]];
         }
 
         // Set the value at the final layer
-        currentLayer[layers[layers.length - 1]] = value;
+        currentLayer[destinationLayers[destinationLayers.length - 1]] = value;
 
         await writeFile(db, JSON.stringify(database), { signal });
 
-        return { [layers.join(".")]: value };
+        return { [destinationLayers.join(".")]: value };
     },
 
-    set: async function (value, ...layers)
+    set: async function (value, ...destinationLayers)
     {
-        return this.setGeneric(liveDBFile, value, ...layers);
+        return await this.setGeneric(LIVE_DB_FILE, value, ...destinationLayers);
     },
 
-    setStatic: async function (value, ...layers)
+    setStatic: async function (value, ...destinationLayers)
     {
-        return this.setGeneric(staticDBFile, value, ...layers);
+        const newSet = await this.setGeneric(STATIC_DB_FILE, value, ...destinationLayers);
+        preloadStaticDB = await this.getAll(STATIC_DB_FILE); // make sure preload is correct
+        return newSet;
+    },
+
+    get: async function (...destinationLayers)
+    {
+        return await this.getGeneric(LIVE_DB_FILE, ...destinationLayers);
+    },
+
+    getStatic: async function (...destinationLayers)
+    {
+        return await this.getGeneric(STATIC_DB_FILE, ...destinationLayers);
     },
 
 
-
-    getAll: async function (dbFile = liveDBFile)
+    getAll: async function (dbFile = LIVE_DB_FILE)
     {
         try
         {
@@ -79,35 +111,7 @@ module.exports = {
         }
     },
 
-
-
-    checkSchedule: async function ()
-    {
-        const d = new Date();
-        const dateString = d.toDateString();
-        if (d.getHours() != 12)
-        {
-            // return false;
-        }
-
-        const scheduleCheckedDate = await this.get('schedule_checked');
-        // if (scheduleCheckedDate.result != dateString)
-        if (1 == 1)
-        {
-            const staticDB = await this.getAll(staticDBFile);
-            const households = Object.values(staticDB.households);
-
-            return staticDB;
-
-
-            await this.set(dateString, 'schedule_checked');
-        }
-
-
-        return { result: "s" };
-    },
-
-
+    /*****SPECIFIC SETS******/
     /**
      *
      *
@@ -115,15 +119,28 @@ module.exports = {
      * @param {String} category recycling/trash
      * @param {String} value defaults to the opposite of the current value, otherwise this value overwrites
      */
-    setButtonState: async function (unitId, category, value = null)
+    setButtonState: async function (photonID, category, value = null)
     {
         if (value == null)
         {
-            let currentVal = await this.get('button_states', unitId, category);
+            let currentVal = await this.get('button_states', photonID, category);
             value = !currentVal.result;
         }
-        return this.set(value, 'button_states', unitId, category);
+        return this.set(value, 'button_states', photonID, category);
     },
+
+    setAllButtonStates: async function (household, category, value = null)
+    {
+        const householdsMap = await this.getStatic('households');
+        for (let photonID in householdsMap)
+        {
+            if (householdsMap[photonID] == household)
+            {
+                this.setButtonState(photonID, category, value);
+            }
+        }
+    },
+
 
     getButtonState: async function (unitId, category)
     {
@@ -131,12 +148,85 @@ module.exports = {
     },
 
 
-    generateTrashDays: async function ()
+
+
+    /******* SCHEDULE************/
+
+    checkSchedule: async function (force = false)
     {
-        const staticDB = await this.getAll(staticDBFile);
-        const households = [...new Set(Object.values(staticDB.households))];
+        const d = new Date();
+        const tomorrow = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1);
+
+        const todayDateString = d.toISOString().split("T")[0];
+        const tomorrowDateString = tomorrow.toISOString().split("T")[0];
+        if (!force && d.getHours() != 12)
+        {
+            return false;
+        }
+
+        const scheduleCheckedDate = await this.get('schedule_checked');
+
+        console.log(scheduleCheckedDate);
+
+        let result = [];
+        if (force || scheduleCheckedDate.result != todayDateString)
+        {
+            const households = await this.getUniqueHouseholds();
+
+            const trashDays = await this.getStatic('trash_days');
+            const recycleDays = await this.getStatic('recycle_days');
+
+
+            for (let householdIndex in households)
+            {
+                const household = households[householdIndex];
+                console.log(trashDays[household]);
+                console.log(todayDateString);
+                if (trashDays[household] && trashDays[household].includes(todayDateString))
+                {
+
+                    //trash was this morning, missed it
+                    await this.setAllButtonStates(household, "trash", false);
+                    result.push({ household, category: "trash", value: false });
+                }
+                if (recycleDays[household] && recycleDays[household].includes(todayDateString))
+                {
+                    //recycle was this morning, missed it
+                    await this.setAllButtonStates(household, "recycle", false);
+                    result.push({ household, category: "recycle", value: false });
+                }
+
+                if (trashDays[household] && trashDays[household].includes(tomorrowDateString))
+                {
+                    //trash is tomorrow, light up
+                    await this.setAllButtonStates(household, "trash", true);
+                    result.push({ household, category: "trash", value: true });
+
+                }
+                if (recycleDays[household] && recycleDays[household].includes(tomorrowDateString))
+                {
+                    //recycle is tomorrow, light up
+                    await this.setAllButtonStates(household, "recycle", true);
+                    result.push({ household, category: "recycle", value: true });
+
+                }
+            }
+
+
+            await this.set(todayDateString, 'schedule_checked');
+        }
+
+
+        return { result };
+    },
+
+
+
+    generateTrashRecycleDays: async function ()
+    {
+        const staticDB = await this.getAll(STATIC_DB_FILE);
+        const households = await this.getUniqueHouseholds();
         const holdenDB = await holden.display();
-        console.log(households);
 
         for (let household of households)
         {
@@ -158,10 +248,15 @@ module.exports = {
             }
         }
 
+    },
+
+    getUniqueHouseholds: async function ()
+    {
+        const notUnique = Object.values(await this.getStatic('households'));
+        return [...new Set(notUnique)];
     }
 
 
 
+};
 
-
-}; 

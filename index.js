@@ -31,7 +31,7 @@ server({ security: { csrf: false } }, [
 
     get('/db/get-all', ctx => jsonHeader, async ctx => await db.getAll()),
 
-    get('/db/set-test', ctx => jsonHeader, async ctx => await db.setButtonState('u1234', "trash")),
+    get('/db/set-test', ctx => jsonHeader, async ctx => await db.setButtonState('0a10aced202194944a058a88', "trash")),
 
     // get('/hooks/check-schedule/:photonid', ctx => jsonHeader, async ctx => await db.checkSchedule('u1234', "trash")),
 
@@ -64,7 +64,9 @@ server({ security: { csrf: false } }, [
     ),
 
 
-    get('/db/check-schedule', ctx => jsonHeader, async ctx => await db.generateTrashDays()),
+    get('/hooks/check-schedule', ctx => jsonHeader, async ctx => await db.checkSchedule()),
+    get('/hooks/check-schedule/force', ctx => jsonHeader, async ctx => await db.checkSchedule(true)),
+    get('/hooks/generate-days', ctx => jsonHeader, async ctx => await db.generateTrashRecycleDays()),
 
 
 

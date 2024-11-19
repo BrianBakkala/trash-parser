@@ -1,13 +1,13 @@
 
-const dowMap = { Su: 0, M: 1, T: 2, W: 3, Th: 4, F: 5, Sa: 6 }; ///0-based from JS Date.getDay()
+const DOW_MAP = { Su: 0, M: 1, T: 2, W: 3, Th: 4, F: 5, Sa: 6 }; ///0-based from JS Date.getDay()
 
 
 
 function getDays(dayOfWeek, scheme, holidays = null, year = 2024)
 {
-    if (dowMap.hasOwnProperty(dayOfWeek))
+    if (DOW_MAP.hasOwnProperty(dayOfWeek))
     {
-        dayOfWeek = dowMap[dayOfWeek];
+        dayOfWeek = DOW_MAP[dayOfWeek];
     }
 
     if (holidays == null)
