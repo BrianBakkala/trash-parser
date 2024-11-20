@@ -55,20 +55,20 @@ function getTrashDays(lines, dayOfWeekIndex, year = 2024)
     const relevantRecyclingDays = recyclingDays.filter(x => x >= yesterday).slice(0, 2);
 
     const trashObject = {
-        today: today.toISOString().split("T")[0],
-        tomorrow: tomorrow.toISOString().split("T")[0],
-        yesterday: yesterday.toISOString().split("T")[0],
+        today: today.toLocaleDateString('en-CA'),
+        tomorrow: tomorrow.toLocaleDateString('en-CA'),
+        yesterday: yesterday.toLocaleDateString('en-CA'),
 
         trash_day_curr: relevantTrashDays[0] ?? null,
-        trash_day_curr_string: relevantTrashDays[0] ? relevantTrashDays[0].toISOString().split("T")[0] : null,
-        trash_day_next: relevantTrashDays[1] ? relevantTrashDays[1].toISOString().split("T")[0] : null,
+        trash_day_curr_string: relevantTrashDays[0] ? relevantTrashDays[0].toLocaleDateString('en-CA') : null,
+        trash_day_next: relevantTrashDays[1] ? relevantTrashDays[1].toLocaleDateString('en-CA') : null,
 
         recycling_day_curr: relevantRecyclingDays[0] ?? null,
-        recycling_day_curr_string: relevantRecyclingDays[0] ? relevantRecyclingDays[0].toISOString().split("T")[0] : null,
-        recycling_day_next: relevantRecyclingDays[1] ? relevantRecyclingDays[1].toISOString().split("T")[0] : null,
+        recycling_day_curr_string: relevantRecyclingDays[0] ? relevantRecyclingDays[0].toLocaleDateString('en-CA') : null,
+        recycling_day_next: relevantRecyclingDays[1] ? relevantRecyclingDays[1].toLocaleDateString('en-CA') : null,
 
-        trash_days: trashDays.map(x => x.toISOString().split("T")[0]),
-        recycling_days: recyclingDays.map(x => x.toISOString().split("T")[0])
+        trash_days: trashDays.map(x => x.toLocaleDateString('en-CA')),
+        recycling_days: recyclingDays.map(x => x.toLocaleDateString('en-CA'))
     };
 
     const simpleObject = {

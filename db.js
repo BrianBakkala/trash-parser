@@ -1,10 +1,10 @@
 const { writeFile, readFile } = require('node:fs/promises');
 const { resolve } = require('node:path');
-const { Buffer } = require('node:buffer');
+
 const controller = new AbortController();
 const { signal } = controller;
+
 const holden = require('./holden');
-const parsing = require('./parsing');
 const calendar = require('./calendar');
 
 const LIVE_DB_FILE = "./db_dynamic.json";
@@ -158,10 +158,11 @@ module.exports = {
     checkSchedule: async function (force = false)
     {
         const d = new Date();
+        console.log(d);
         const tomorrow = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1);
 
-        const todayDateString = d.toISOString().split("T")[0];
-        const tomorrowDateString = tomorrow.toISOString().split("T")[0];
+        const todayDateString = d.toLocaleDateString('en-CA');
+        const tomorrowDateString = tomorrow.toLocaleDateString('en-CA');
         if (!force && d.getHours() != 12)
         {
             return false;
@@ -188,27 +189,27 @@ module.exports = {
 
                     //trash was this morning, missed it
                     await this.setAllButtonStates(household, "trash", false);
-                    result.push({ household, category: "trash", value: false });
+                    result.push({ household, category: "trash", value: false, message: "trash was this morning, missed it" });
                 }
                 if (recycleDays[household] && recycleDays[household].includes(todayDateString))
                 {
                     //recycle was this morning, missed it
                     await this.setAllButtonStates(household, "recycle", false);
-                    result.push({ household, category: "recycle", value: false });
+                    result.push({ household, category: "recycle", value: false, message: "recycle was this morning, missed it" });
                 }
 
                 if (trashDays[household] && trashDays[household].includes(tomorrowDateString))
                 {
                     //trash is tomorrow, light up
                     await this.setAllButtonStates(household, "trash", true);
-                    result.push({ household, category: "trash", value: true });
+                    result.push({ household, category: "trash", value: true, message: "trash is tomorrow, light up" });
 
                 }
                 if (recycleDays[household] && recycleDays[household].includes(tomorrowDateString))
                 {
                     //recycle is tomorrow, light up
                     await this.setAllButtonStates(household, "recycle", true);
-                    result.push({ household, category: "recycle", value: true });
+                    result.push({ household, category: "recycle", value: true, message: "recycle is tomorrow, light up" });
 
                 }
             }

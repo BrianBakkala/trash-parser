@@ -17,25 +17,26 @@ const jsonHeader = header('Content-Type', 'application/json');
 server({ security: { csrf: false } }, [
     get('/', ctx => jsonHeader, ctx => 'Hello'),
     get('/favicon.ico', ctx => jsonHeader, ctx => 'Hello'),
-    get('/holden', ctx => jsonHeader, async ctx => await holden.display()),
-    get('/holden/simple', ctx => jsonHeader, async ctx => await holden.display_simple()),
-    get('/holden/full/:dow', ctx => jsonHeader, async ctx => await holden.display(ctx.params.dow)),
-    get('/holden/simple/:dow', ctx => jsonHeader, async ctx => await holden.display_simple(ctx.params.dow)),
-    get('/test', ctx => jsonHeader, async ctx => await holden.display_test(true, true)),
-    get('/test/random', ctx => jsonHeader, async ctx => await holden.display_test(Math.random() < 0.5, Math.random() < 0.5)),
-    get('/test/:trash/:recycling', ctx => jsonHeader, async ctx => await holden.display_test(ctx.params.trash, ctx.params.recycling)),
+
+    // get('/holden', ctx => jsonHeader, async ctx => await holden.display()),
+    // get('/holden/simple', ctx => jsonHeader, async ctx => await holden.display_simple()),
+    // get('/holden/full/:dow', ctx => jsonHeader, async ctx => await holden.display(ctx.params.dow)),
+    // get('/holden/simple/:dow', ctx => jsonHeader, async ctx => await holden.display_simple(ctx.params.dow)),
+    // get('/test', ctx => jsonHeader, async ctx => await holden.display_test(true, true)),
+    // get('/test/random', ctx => jsonHeader, async ctx => await holden.display_test(Math.random() < 0.5, Math.random() < 0.5)),
+    // get('/test/:trash/:recycling', ctx => jsonHeader, async ctx => await holden.display_test(ctx.params.trash, ctx.params.recycling)),
 
 
-    get('/db/get-all', ctx => jsonHeader, async ctx => await db.getAll()),
+    // get('/db/get-all', ctx => jsonHeader, async ctx => await db.getAll()),
 
-    get('/db/get/:a', ctx => jsonHeader, async ctx => await db.get(ctx.params.a)),
-    get('/db/get/:a/:b', ctx => jsonHeader, async ctx => await db.get(ctx.params.a, ctx.params.b)),
+    // get('/db/get/:a', ctx => jsonHeader, async ctx => await db.get(ctx.params.a)),
+    // get('/db/get/:a/:b', ctx => jsonHeader, async ctx => await db.get(ctx.params.a, ctx.params.b)),
 
-    get('/db/get-all', ctx => jsonHeader, async ctx => await db.getAll()),
+    // get('/db/get-all', ctx => jsonHeader, async ctx => await db.getAll()),
 
-    get('/db/set-test', ctx => jsonHeader, async ctx => await db.setButtonState('0a10aced202194944a058a88', "trash")),
 
     // get('/hooks/check-schedule/:photonid', ctx => jsonHeader, async ctx => await db.checkSchedule('u1234', "trash")),
+    get('/db/set-test', ctx => jsonHeader, async ctx => await db.setButtonState('51wt', "trash")),
 
     post('/hooks/set-button-state', ctx => jsonHeader,
         async function (ctx)

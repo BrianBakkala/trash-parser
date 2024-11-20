@@ -52,7 +52,7 @@ function getDays(dayOfWeek, scheme, holidays = null, year = 2024)
 
     const trashObject = {
         holidays: holidays,
-        days: recyclingDays.map(x => x.toISOString().split("T")[0])
+        days: recyclingDays.map(x => x.toLocaleDateString('en-CA'))
     };
 
     return trashObject;
