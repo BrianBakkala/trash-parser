@@ -1,6 +1,3 @@
-
-
-
 const particleAuth = require('./particle_auth');
 const Particle = require('particle-api-js');
 const particle = new Particle();

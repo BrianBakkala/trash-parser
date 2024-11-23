@@ -1,10 +1,7 @@
 // endpoint
 // https://bindicator-439415.ue.r.appspot.com/
 
-
-
 const db = require('./db.js');
-const holden = require('./holden');
 const papi = require('./particle_api');
 
 const server = require('server');
@@ -15,7 +12,7 @@ const jsonHeader = header('Content-Type', 'application/json');
 
 // Answers to any request
 server({ security: { csrf: false } }, [
-    get('/', ctx => jsonHeader, ctx => 'Hello'),
+    get('/', ctx => jsonHeader, ctx => process.env.ENV_TEST),
     get('/favicon.ico', ctx => jsonHeader, ctx => 'Hello'),
 
     // get('/holden', ctx => jsonHeader, async ctx => await holden.display()),
@@ -41,7 +38,7 @@ server({ security: { csrf: false } }, [
     post('/hooks/set-button-state', ctx => jsonHeader,
         async function (ctx)
         {
-            if (ctx.data["8LplHeuLKUnwogNYuxOD1YioIQ08WyN39jkiN9JQ6Zsyk7dn2V"] == "lBdUeV2wS4IhVjhlcZxoAujMMVOCydUC2VNXqaP63r6e90cAJL")
+            if (ctx.data[process.env.SECURITY_QUERY_KEY] == process.env.SECURITY_QUERY_VALUE)
             {
                 await db.setButtonState(ctx.data.coreid, ctx.data.data);
                 return { success: true };
@@ -69,6 +66,9 @@ server({ security: { csrf: false } }, [
 
     get('/hooks/check-schedule', ctx => jsonHeader, async ctx => await db.checkSchedule()),
     get('/hooks/check-schedule/force', ctx => jsonHeader, async ctx => await db.checkSchedule(true)),
+
+    
+
     get('/hooks/generate-days', ctx => jsonHeader, async ctx => await db.generateTrashRecycleDays()),
 
     get('/papi/test', ctx => jsonHeader, async ctx => await papi.test()),
