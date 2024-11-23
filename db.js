@@ -6,6 +6,7 @@ const { signal } = controller;
 
 const holden = require('./holden');
 const calendar = require('./calendar');
+const papi = require('./particle_api');
 
 const LIVE_DB_FILE = "./db_dynamic.json";
 const STATIC_DB_FILE = "./db_static.json";
@@ -124,12 +125,26 @@ module.exports = {
      */
     setButtonState: async function (photonID, category, value = null)
     {
+        let currentVal = await this.get('button_states', photonID, category);
         if (value == null)
         {
-            let currentVal = await this.get('button_states', photonID, category);
             value = !currentVal.result;
         }
-        return await this.set(value, 'button_states', photonID, category);
+
+        try
+        {
+            // if (currentVal != value)
+            {
+                await this.set(value, 'button_states', photonID, category);
+                await papi.publishParticleEvent("button_state_changed", { photon_id: photonID, category, value });
+            }
+
+        }
+        catch (e)
+        {
+            return "Error: " + e;
+        }
+
     },
 
     setAllButtonStates: async function (household, category, value = null)
@@ -155,7 +170,7 @@ module.exports = {
 
     /******* SCHEDULE************/
 
-    checkSchedule: async function (force = false)
+    checkSchedule: async function ()
     {
         const d = new Date();
         console.log(d);
@@ -163,17 +178,13 @@ module.exports = {
 
         const todayDateString = d.toLocaleDateString('en-CA');
         const tomorrowDateString = tomorrow.toLocaleDateString('en-CA');
-        if (!force && d.getHours() != 12)
-        {
-            return false;
-        }
 
         const scheduleCheckedDate = await this.get('schedule_checked');
 
         console.log(scheduleCheckedDate);
 
         let result = [];
-        if (force || scheduleCheckedDate && scheduleCheckedDate.result && scheduleCheckedDate.result != todayDateString)
+        if (scheduleCheckedDate && scheduleCheckedDate.result && scheduleCheckedDate.result != todayDateString)
         {
             const households = await this.getUniqueHouseholds();
 
@@ -214,14 +225,23 @@ module.exports = {
                 }
             }
 
-
-            await this.set(todayDateString, 'schedule_checked');
+            // await this.set(todayDateString, 'schedule_checked');
         }
 
 
         return { result };
     },
 
+    overrideAll: async function (category, value)
+    {
+        const households = await this.getUniqueHouseholds();
+
+        for (let householdIndex in households)
+        {
+            const household = households[householdIndex];
+            await this.setAllButtonStates(household, category, value);
+        }
+    },
 
 
     generateTrashRecycleDays: async function ()

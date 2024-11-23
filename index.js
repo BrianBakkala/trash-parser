@@ -65,9 +65,9 @@ server({ security: { csrf: false } }, [
 
 
     get('/hooks/check-schedule', ctx => jsonHeader, async ctx => await db.checkSchedule()),
-    get('/hooks/check-schedule/force', ctx => jsonHeader, async ctx => await db.checkSchedule(true)),
+    get('/hooks/override/:category/:value', ctx => jsonHeader, async ctx => await db.overrideAll(ctx.params.category, ctx.params.value)),
 
-    
+
 
     get('/hooks/generate-days', ctx => jsonHeader, async ctx => await db.generateTrashRecycleDays()),
 
