@@ -1,7 +1,8 @@
 
 const parsing = require('./parsing');
+const utility = require('./utility');
 
-const { PdfReader } = require("pdfreader");
+const PdfReader = require("pdfreader-fixed");
 
 
 module.exports = {
@@ -20,6 +21,7 @@ module.exports = {
                 function (items)
                 {
                     console.log(items);
+                    utility.writeJSONToFile(items);
                     return;
                     return data.text.match(/Hayfield (Lane|Ln\.?)\s*(M|T|W|Th|F)/)[2];
 
@@ -100,11 +102,10 @@ async function getPDFfromURL(url, callback)
     const response = await fetch(url);
     const pdfBuffer = await response.arrayBuffer();
 
-    let prevItem = null;
 
     const items = {};
 
-    new PdfReader().parseBuffer(pdfBuffer, function (err, item)
+    new PdfReader().parseBuffer(trimBuffer(pdfBuffer), function (err, item)
     {
         if (!item)
         {
@@ -119,4 +120,20 @@ async function getPDFfromURL(url, callback)
     });
 
 
+}
+
+
+function trimBuffer(buffer)
+{
+    let length = buffer.byteLength;
+    const view = new Uint8Array(buffer);
+
+    // Traverse backwards and find the last non-null byte
+    while (length > 0 && view[length - 1] === 0)
+    {
+        length--;
+    }
+
+    // Slice the buffer to remove the trailing nulls
+    return buffer.slice(0, length);
 }

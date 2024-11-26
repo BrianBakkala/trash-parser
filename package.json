@@ -20,7 +20,7 @@
   "dependencies": {
     "firebase-admin": "^13.0.1",
     "particle-api-js": "^11.1.1",
-    "pdfreader": "^3.0.5",
+    "pdfreader-fixed": "git+https://github.com/BrianBakkala/npm-pdfreader-fixed.git",
     "server": "^1.0.41"
   }
 }
