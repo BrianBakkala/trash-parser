@@ -18,9 +18,10 @@
   },
   "homepage": "https://github.com/BrianBakkala/trash-parser#readme",
   "dependencies": {
+    "firebase-admin": "^13.0.1",
     "particle-api-js": "^11.1.1",
     "pdf-parse": "^1.1.1",
     "pdfjs-dist": "^4.7.76",
-    "server": "^1.0"
+    "server": "^1"
   }
 }

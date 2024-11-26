@@ -147,7 +147,7 @@ module.exports = {
 
     },
 
-    setAllButtonStates: async function (household, category, value = null)
+    setHouseholdButtonStates: async function (household, category, value = null)
     {
         const householdsMap = await this.getStatic('households');
         for (let photonID in householdsMap)
@@ -199,27 +199,27 @@ module.exports = {
                 {
 
                     //trash was this morning, missed it
-                    await this.setAllButtonStates(household, "trash", false);
+                    await this.setHouseholdButtonStates(household, "trash", false);
                     result.push({ household, category: "trash", value: false, message: "trash was this morning, missed it" });
                 }
                 if (recycleDays[household] && recycleDays[household].includes(todayDateString))
                 {
                     //recycle was this morning, missed it
-                    await this.setAllButtonStates(household, "recycle", false);
+                    await this.setHouseholdButtonStates(household, "recycle", false);
                     result.push({ household, category: "recycle", value: false, message: "recycle was this morning, missed it" });
                 }
 
                 if (trashDays[household] && trashDays[household].includes(tomorrowDateString))
                 {
                     //trash is tomorrow, light up
-                    await this.setAllButtonStates(household, "trash", true);
+                    await this.setHouseholdButtonStates(household, "trash", true);
                     result.push({ household, category: "trash", value: true, message: "trash is tomorrow, light up" });
 
                 }
                 if (recycleDays[household] && recycleDays[household].includes(tomorrowDateString))
                 {
                     //recycle is tomorrow, light up
-                    await this.setAllButtonStates(household, "recycle", true);
+                    await this.setHouseholdButtonStates(household, "recycle", true);
                     result.push({ household, category: "recycle", value: true, message: "recycle is tomorrow, light up" });
 
                 }
@@ -239,7 +239,7 @@ module.exports = {
         for (let householdIndex in households)
         {
             const household = households[householdIndex];
-            await this.setAllButtonStates(household, category, value);
+            await this.setHouseholdButtonStates(household, category, value);
         }
     },
 

@@ -3,6 +3,7 @@
 
 const db = require('./db.js');
 const papi = require('./particle_api');
+const fb = require('./fb');
 
 const server = require('server');
 const { get, post } = server.router;
@@ -72,6 +73,8 @@ server({ security: { csrf: false } }, [
     get('/hooks/generate-days', ctx => jsonHeader, async ctx => await db.generateTrashRecycleDays()),
 
     get('/papi/test', ctx => jsonHeader, async ctx => await papi.test()),
+
+    get('/fb/test', ctx => jsonHeader, async ctx => await fb.test()),
 
 
 
