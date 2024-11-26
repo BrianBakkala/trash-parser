@@ -1,3 +1,4 @@
+require('./utility');
 const admin = require('firebase-admin');
 
 // Initialize Firebase with the service account key
@@ -11,16 +12,100 @@ const db = admin.firestore();  // Firestore instance
 
 async function createHousehold(household)
 {
-    await db.collection('households').doc(household).set({ bindicators: [] });
-    console.log('Document successfully written!');
+    await db.collection('households').doc(household).get()
+        .then(async (doc) =>
+        {
+            if (!doc.exists)
+            {
+                await doc.set({ bindicators: [] });
+            }
+        });
 }
 
 async function addBindicatorsToHousehold(household, ...photonIds)
 {
-    const currentBindicators = await db.collection('bindicators').doc(household);
-    currentBindicators.forEach(doc =>
+    return new Promise((resolve, reject) =>
     {
-        console.log(doc.id, '=>', doc.data());
+        db.collection('households').doc(household).get()
+            .then(async (doc) =>
+            {
+                let bindicators = doc.data().bindicators;
+                bindicators.push(...photonIds);
+                bindicators = bindicators.unique();
+
+                console.log(bindicators);
+
+                db.collection('households').doc(household).update({ bindicators })
+                    .then(() => resolve());
+            }
+
+            );
+    });
+
+}
+
+async function createBindicator(household, photonId)
+{
+    await db.collection('bindicators').doc(photonId).set(
+        {
+            photon_id: photonId,
+            household_name: household,
+            trash_on: false,
+            recycle_on: false,
+
+            holidays: {},
+
+            recycle_schedule: "W",
+            trash_schedule: "W",
+
+            trash_scheme: "weekly",
+            recycle_scheme: "biweekly first"
+        }
+    );
+}
+
+async function onboardBindicator(household, photonId)
+{
+    return new Promise((resolve, reject) =>
+    {
+        Promise.all([
+            createHousehold(household),
+            addBindicatorsToHousehold(household, photonId),
+            createBindicator(household, photonId)
+        ])
+            .then(() => resolve());
+    });
+}
+
+async function getButtonState(photonId, category)
+{
+    return new Promise((resolve, reject) =>
+    {
+        db.collection('bindicators').doc(photonId).get()
+            .then(
+                (doc) =>
+                {
+                    resolve({ state: doc.data()[category + '_on'] });
+                }
+            );
+    });
+}
+
+async function setButtonState(photonId, category, value = null)
+{
+    return new Promise((resolve, reject) =>
+    {
+        this.getButtonState(photonId, category).then((state) =>
+        {
+            if (value == null)
+            {
+                value = !state.state;
+            }
+
+            db.collection('bindicators').doc(photonId).update({ [category + '_on']: value })
+                .then(() => { resolve(); });
+
+        });
     });
 }
 
@@ -30,6 +115,8 @@ module.exports = {
     {
         const hh = "bakkala_holden";
         createHousehold(hh);
-        addBindicatorsToHousehold(hh, "123", "123");
+        onboardBindicator(hh, "123456");
     }
+
+    , getButtonState, setButtonState
 };

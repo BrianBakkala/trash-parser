@@ -75,6 +75,8 @@ server({ security: { csrf: false } }, [
     get('/papi/test', ctx => jsonHeader, async ctx => await papi.test()),
 
     get('/fb/test', ctx => jsonHeader, async ctx => await fb.test()),
+    get('/fb/gbs', ctx => jsonHeader, async ctx => await fb.getButtonState('123456', 'trash')),
+    get('/fb/sbs', ctx => jsonHeader, async ctx => await fb.setButtonState('123456', 'trash')),
 
 
 
