@@ -1,8 +1,8 @@
 
-const pdf = require('pdf-parse');
-const pdfjsLib = require('pdfjs-dist');
 const parsing = require('./parsing');
-import * as pdfjsLib from 'pdfjs-dist';
+
+const { PdfReader } = require("pdfreader");
+
 
 module.exports = {
     /**
@@ -17,9 +17,10 @@ module.exports = {
         {
             dowLetter = await getPDFfromURL("https://www.holdenma.gov/sites/g/files/vyhlif4526/f/uploads/trash_collection_by_street_020420.pdf",
 
-
-                function (data)
+                function (items)
                 {
+                    console.log(items);
+                    return;
                     return data.text.match(/Hayfield (Lane|Ln\.?)\s*(M|T|W|Th|F)/)[2];
 
                     return {
@@ -28,7 +29,7 @@ module.exports = {
                     };
                 }
             );
-        }
+        };
 
         const DOW_MAP = { Su: 0, M: 1, T: 2, W: 3, Th: 4, F: 5, Sa: 6 }; ///0-based from JS Date.getDay()
         const dayOfWeekData = { day_of_week: dowLetter, day_of_week_number: DOW_MAP[dowLetter] };
@@ -37,6 +38,9 @@ module.exports = {
 
             function (data)
             {
+
+                // console.log(data);
+                return;
                 const cleanedUpText = data.text
                     .replace("272929", "272829")
                     .replace("12345121\n2\n34567", "12345121234567")
@@ -94,11 +98,25 @@ async function getPDFfromURL(url, callback)
 {
 
     const response = await fetch(url);
-    const pdfBytes = await response.arrayBuffer();
+    const pdfBuffer = await response.arrayBuffer();
 
-    return await pdf(pdfBytes).then(function (data)
+    let prevItem = null;
+
+    const items = {};
+
+    new PdfReader().parseBuffer(pdfBuffer, function (err, item)
     {
-        console.log(pdfjsLib);
-        return callback(data);
+        if (!item)
+        {
+            return callback(items);
+        }
+        if (item.y)
+        {
+            items[item.y] = items[item.y] ?? [];
+            items[item.y].push(item);
+
+        }
     });
+
+
 }

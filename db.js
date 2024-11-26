@@ -4,7 +4,7 @@ const { resolve } = require('node:path');
 const controller = new AbortController();
 const { signal } = controller;
 
-const holden = require('./holden.mjs');
+const holden = require('./holden');
 const calendar = require('./calendar');
 const papi = require('./particle_api');
 
