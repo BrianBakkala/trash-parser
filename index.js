@@ -41,7 +41,7 @@ server({ security: { csrf: false } }, [
         {
             if (ctx.data[process.env.SECURITY_QUERY_KEY] == process.env.SECURITY_QUERY_VALUE)
             {
-                await db.setButtonState(ctx.data.coreid, ctx.data.data);
+                await fb.setButtonState(ctx.data.coreid, ctx.data.data);
                 return { success: true };
             }
             else
@@ -55,7 +55,7 @@ server({ security: { csrf: false } }, [
         {
             if (ctx.data["8LplHeuLKUnwogNYuxOD1YioIQ08WyN39jkiN9JQ6Zsyk7dn2V"] == "lBdUeV2wS4IhVjhlcZxoAujMMVOCydUC2VNXqaP63r6e90cAJL")
             {
-                return await db.getButtonState(ctx.data.coreid, ctx.data.data);
+                return await fb.getButtonState(ctx.data.coreid, ctx.data.data);
             }
             else
             {
@@ -66,17 +66,18 @@ server({ security: { csrf: false } }, [
 
 
     get('/hooks/check-schedule', ctx => jsonHeader, async ctx => await db.checkSchedule()),
-    get('/hooks/override/:category/:value', ctx => jsonHeader, async ctx => await db.overrideAll(ctx.params.category, ctx.params.value)),
+    get('/hooks/override/:category/:value', ctx => jsonHeader, async ctx => await fb.setButtonStatesForAllBindicators(ctx.params.category, ctx.params.value)),
 
 
 
-    get('/hooks/generate-days', ctx => jsonHeader, async ctx => await db.generateTrashRecycleDays()),
+    get('/hooks/generate-days', ctx => jsonHeader, async ctx => await fb.generateTrashRecycleDays()),
 
     get('/papi/test', ctx => jsonHeader, async ctx => await papi.test()),
 
     get('/fb/test', ctx => jsonHeader, async ctx => await fb.test()),
     get('/fb/gbs', ctx => jsonHeader, async ctx => await fb.getButtonState('123456', 'trash')),
     get('/fb/sbs', ctx => jsonHeader, async ctx => await fb.setButtonState('123456', 'trash')),
+    get('/fb/shbs', ctx => jsonHeader, async ctx => await fb.setHouseholdButtonStates('bakkala_holden', 'trash')),
 
 
 

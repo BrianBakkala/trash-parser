@@ -1,16 +1,1 @@
-{
-  "button_states": {
-    "0a10aced202194944a058a88": {
-      "trash": false
-    },
-    "5hfl": {
-      "trash": true,
-      "recycle": false
-    },
-    "51wt": {
-      "recycle": false,
-      "trash": false
-    }
-  },
-  "schedule_checked": "2024-11-19"
-}
+{"button_states":{"0a10aced202194944a058a88":{"trash":"true"},"5hfl":{"trash":"true","recycle":false},"51wt":{"recycle":false,"trash":"true"}},"schedule_checked":"2024-11-19"}

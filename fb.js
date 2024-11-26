@@ -1,5 +1,9 @@
 require('./utility');
 const admin = require('firebase-admin');
+const papi = require('./particle_api');
+const calendar = require('./calendar');
+const holden = require('./holden.mjs');
+
 
 // Initialize Firebase with the service account key
 const serviceAccount = require('./config/firebaseServiceAccountKey.json');
@@ -10,39 +14,7 @@ admin.initializeApp({
 
 const db = admin.firestore();  // Firestore instance
 
-async function createHousehold(household)
-{
-    await db.collection('households').doc(household).get()
-        .then(async (doc) =>
-        {
-            if (!doc.exists)
-            {
-                await doc.set({ bindicators: [] });
-            }
-        });
-}
-
-async function addBindicatorsToHousehold(household, ...photonIds)
-{
-    return new Promise((resolve, reject) =>
-    {
-        db.collection('households').doc(household).get()
-            .then(async (doc) =>
-            {
-                let bindicators = doc.data().bindicators;
-                bindicators.push(...photonIds);
-                bindicators = bindicators.unique();
-
-                console.log(bindicators);
-
-                db.collection('households').doc(household).update({ bindicators })
-                    .then(() => resolve());
-            }
-
-            );
-    });
-
-}
+///ONBOARDING HOOKS
 
 async function createBindicator(household, photonId)
 {
@@ -68,15 +40,14 @@ async function onboardBindicator(household, photonId)
 {
     return new Promise((resolve, reject) =>
     {
-        Promise.all([
-            createHousehold(household),
-            addBindicatorsToHousehold(household, photonId),
-            createBindicator(household, photonId)
-        ])
-            .then(() => resolve());
+        createBindicator(household, photonId).then(() => resolve());
     });
 }
 
+
+
+
+///BUTTON STATES
 async function getButtonState(photonId, category)
 {
     return new Promise((resolve, reject) =>
@@ -109,14 +80,124 @@ async function setButtonState(photonId, category, value = null)
     });
 }
 
+async function setButtonStatesForDocumentGroup(docGroup, category, value = null) 
+{
+    return new Promise(async (resolve, reject) =>
+    {
+        if (!docGroup.empty)
+        {
+            // Start a batch  
+            const batch = db.batch();
+
+            docGroup.forEach((doc) =>
+            {
+                if (value == null)
+                {
+                    value = !doc.data()[category + '_on'];
+                }
+
+                batch.update(doc.ref, { [category + '_on']: value });
+            });
+
+            // Commit the batch  
+            await batch.commit().then(() => { resolve(); });
+        }
+
+    });
+}
+
+async function setHouseholdButtonStates(household, category, value = null) 
+{
+    return new Promise(async (resolve, reject) =>
+    {
+        setButtonStatesForDocumentGroup(
+
+            await db.collection('bindicators').where('household_name', '==', household).get(),
+
+            category,
+            value
+        ).then(() => resolve());
+    });
+}
+
+async function setButtonStatesForAllBindicators(category, value = null) 
+{
+    return new Promise(async (resolve, reject) =>
+    {
+        setButtonStatesForDocumentGroup(
+
+            await db.collection('bindicators').get(),
+
+            category,
+            value
+        ).then(() => resolve());
+    });
+}
+
+async function parseHolden()
+{
+    const holdenDB = await holden.display();
+
+    console.log(holdenDB);
+
+    return { resylt: holdenDB };
+}
+
+async function generateTrashRecycleDays(category, value = null) 
+{
+    const docGroup = await db.collection('bindicators').get();
+
+
+    return new Promise(async (resolve, reject) =>
+    {
+        if (!docGroup.empty)
+        {
+            // Start a batch  
+            const batch = db.batch();
+
+            docGroup.forEach((doc) =>
+            {
+                const data = doc.data();
+                if (household == "holden_bakkala")
+                {
+                    batch.update(doc.ref, { trash_days: holdenDB.trash_days, recycle_days: holdenDB.recycling_days });
+                }
+                else
+                {
+                    const trashDays = calendar.getDays(data.trash_schedule, data.trash_scheme);
+                    const recycleDays = calendar.getDays(data.recycle_schedule, data.recycle_scheme);
+
+                    batch.update(doc.ref, { trash_days: trashDays.days, recycle_days: recycleDays.days });
+                }
+            });
+
+            // Commit the batch  
+            await batch.commit().then(() => { resolve(); });
+        }
+
+    });
+}
+
+
+
+
+
+
+
 module.exports = {
 
     test: function ()
     {
-        const hh = "bakkala_holden";
-        createHousehold(hh);
-        onboardBindicator(hh, "123456");
-    }
+        // const hh = "bakkala_northborough";
+        // onboardBindicator(hh, "222");
 
-    , getButtonState, setButtonState
+        parseHolden();
+    },
+
+
+    getButtonState,
+    setButtonState,
+    setButtonStatesForAllBindicators,
+    setHouseholdButtonStates,
+    generateTrashRecycleDays,
 };

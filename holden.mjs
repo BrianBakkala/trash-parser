@@ -1,6 +1,8 @@
 
 const pdf = require('pdf-parse');
+const pdfjsLib = require('pdfjs-dist');
 const parsing = require('./parsing');
+import * as pdfjsLib from 'pdfjs-dist';
 
 module.exports = {
     /**
@@ -14,6 +16,7 @@ module.exports = {
         if (dowLetter == null)
         {
             dowLetter = await getPDFfromURL("https://www.holdenma.gov/sites/g/files/vyhlif4526/f/uploads/trash_collection_by_street_020420.pdf",
+
 
                 function (data)
                 {
@@ -48,11 +51,12 @@ module.exports = {
                 // return calendarLines;
 
                 // return { restOfText };
-                // return parsing.getLikelyYear(restOfText);
+                return data;
 
                 return { ...parsing.getTrashDays(calendarLines, dayOfWeekData.day_of_week_number, parsing.getLikelyYear(restOfText)) };
             }
         );
+        console.log(calendarData);
 
         return { ...dayOfWeekData, ...calendarData };
     },
@@ -92,8 +96,9 @@ async function getPDFfromURL(url, callback)
     const response = await fetch(url);
     const pdfBytes = await response.arrayBuffer();
 
-    return pdf(pdfBytes).then(function (data)
+    return await pdf(pdfBytes).then(function (data)
     {
+        console.log(pdfjsLib);
         return callback(data);
     });
 }
