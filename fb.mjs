@@ -9,8 +9,6 @@ const require = createRequire(import.meta.url);
 const serviceAccount = require('./config/firebaseServiceAccountKey.json');
 
 
-
-
 const db = await intializeFirebase();  // Firestore instance
 
 
@@ -82,7 +80,11 @@ export async function setButtonState(photonId, category, value = null)
             }
 
             db.collection('bindicators').doc(photonId).update({ [category + '_on']: value })
-                .then(() => { resolve(); });
+                .then(() =>
+                {
+                    papi.publishParticleEvent("button_state_changed", { photon_id: photonID, category, value });
+                    resolve();
+                });
 
         });
     });
