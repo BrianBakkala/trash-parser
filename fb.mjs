@@ -3,24 +3,24 @@ import * as calendar from './calendar.mjs';
 import * as holden from './holden.mjs';
 import * as util from './utility.mjs';
 import * as papi from './particle_api.mjs';
+
 import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
+const serviceAccount = require('./config/firebaseServiceAccountKey.json');
 
 
 
 
-const db = intializeFirebase();  // Firestore instance
+const db = await intializeFirebase();  // Firestore instance
 
 
 async function intializeFirebase()
 {
     // Initialize Firebase with the service account key
-    const require = createRequire(import.meta.url);
-    const serviceAccount = require('./config/firebaseServiceAccountKey.json');
-
-    admin.initializeApp({
+    await admin.initializeApp({
         credential: admin.credential.cert(serviceAccount),
     });
-    return admin.firestore();
+    return await admin.firestore();
 }
 ///ONBOARDING HOOKS
 
