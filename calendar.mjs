@@ -3,7 +3,7 @@ const DOW_MAP = { Su: 0, M: 1, T: 2, W: 3, Th: 4, F: 5, Sa: 6 }; ///0-based from
 
 
 
-function getDays(dayOfWeek, scheme, holidays = null, year = 2024)
+export function getDays(dayOfWeek, scheme, holidays = null, year = 2024)
 {
     if (DOW_MAP.hasOwnProperty(dayOfWeek))
     {
@@ -69,6 +69,4 @@ function getHolidays(year = 2024)
         new Date("November 28, " + year),
         new Date("December 25, " + year)
     ];
-}
-
-module.exports = { getDays };
+} 

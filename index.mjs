@@ -1,13 +1,14 @@
 // endpoint
 // https://bindicator-439415.ue.r.appspot.com/
 
-const db = require('./db.js');
-const papi = require('./particle_api');
-const fb = require('./fb');
+import * as papi from './particle_api.mjs';
+import * as db from './db.mjs';
+import * as fb from './fb.mjs';
 
-const server = require('server');
+import server from 'server';
 const { get, post } = server.router;
 const { header } = server.reply;
+
 
 const jsonHeader = header('Content-Type', 'application/json');
 

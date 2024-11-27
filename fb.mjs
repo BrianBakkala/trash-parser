@@ -1,22 +1,30 @@
-require('./utility');
-const admin = require('firebase-admin');
-const papi = require('./particle_api');
-const calendar = require('./calendar');
-const holden = require('./holden');
+import admin from 'firebase-admin';
+import * as calendar from './calendar.mjs';
+import * as holden from './holden.mjs';
+import * as util from './utility.mjs';
+import * as papi from './particle_api.mjs';
+import { createRequire } from 'module';
 
 
-// Initialize Firebase with the service account key
-const serviceAccount = require('./config/firebaseServiceAccountKey.json');
 
-admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
-});
 
-const db = admin.firestore();  // Firestore instance
+const db = intializeFirebase();  // Firestore instance
 
+
+async function intializeFirebase()
+{
+    // Initialize Firebase with the service account key
+    const require = createRequire(import.meta.url);
+    const serviceAccount = require('./config/firebaseServiceAccountKey.json');
+
+    admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount),
+    });
+    return admin.firestore();
+}
 ///ONBOARDING HOOKS
 
-async function createBindicator(household, photonId)
+export async function createBindicator(household, photonId)
 {
     await db.collection('bindicators').doc(photonId).set(
         {
@@ -36,7 +44,7 @@ async function createBindicator(household, photonId)
     );
 }
 
-async function onboardBindicator(household, photonId)
+export async function onboardBindicator(household, photonId)
 {
     return new Promise((resolve, reject) =>
     {
@@ -48,7 +56,7 @@ async function onboardBindicator(household, photonId)
 
 
 ///BUTTON STATES
-async function getButtonState(photonId, category)
+export async function getButtonState(photonId, category)
 {
     return new Promise((resolve, reject) =>
     {
@@ -62,7 +70,7 @@ async function getButtonState(photonId, category)
     });
 }
 
-async function setButtonState(photonId, category, value = null)
+export async function setButtonState(photonId, category, value = null)
 {
     return new Promise((resolve, reject) =>
     {
@@ -80,7 +88,7 @@ async function setButtonState(photonId, category, value = null)
     });
 }
 
-async function setButtonStatesForDocumentGroup(docGroup, category, value = null) 
+export async function setButtonStatesForDocumentGroup(docGroup, category, value = null) 
 {
     return new Promise(async (resolve, reject) =>
     {
@@ -106,7 +114,7 @@ async function setButtonStatesForDocumentGroup(docGroup, category, value = null)
     });
 }
 
-async function setHouseholdButtonStates(household, category, value = null) 
+export async function setHouseholdButtonStates(household, category, value = null) 
 {
     return new Promise(async (resolve, reject) =>
     {
@@ -120,7 +128,7 @@ async function setHouseholdButtonStates(household, category, value = null)
     });
 }
 
-async function setButtonStatesForAllBindicators(category, value = null) 
+export async function setButtonStatesForAllBindicators(category, value = null) 
 {
     return new Promise(async (resolve, reject) =>
     {
@@ -134,19 +142,10 @@ async function setButtonStatesForAllBindicators(category, value = null)
     });
 }
 
-async function parseHolden()
-{
-    const holdenDB = await holden.display();
-
-    console.log(holdenDB);
-
-    return { resylt: holdenDB };
-}
-
-async function generateTrashRecycleDays(category, value = null) 
+export async function generateTrashRecycleDays(category, value = null) 
 {
     const docGroup = await db.collection('bindicators').get();
-
+    const holdenDB = await holden.display();
 
     return new Promise(async (resolve, reject) =>
     {
@@ -158,7 +157,7 @@ async function generateTrashRecycleDays(category, value = null)
             docGroup.forEach((doc) =>
             {
                 const data = doc.data();
-                if (household == "holden_bakkala")
+                if (data.household_name == "bakkala_holden")
                 {
                     batch.update(doc.ref, { trash_days: holdenDB.trash_days, recycle_days: holdenDB.recycling_days });
                 }
@@ -184,20 +183,14 @@ async function generateTrashRecycleDays(category, value = null)
 
 
 
-module.exports = {
-
-    test: function ()
-    {
-        // const hh = "bakkala_northborough";
-        // onboardBindicator(hh, "222");
-
-        parseHolden();
-    },
 
 
-    getButtonState,
-    setButtonState,
-    setButtonStatesForAllBindicators,
-    setHouseholdButtonStates,
-    generateTrashRecycleDays,
-};
+export function test()
+{
+    // const hh = "bakkala_northborough";
+    // onboardBindicator(hh, "222");
+
+    return parseHolden();
+}
+
+

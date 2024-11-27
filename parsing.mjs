@@ -1,4 +1,8 @@
-// const calendarLines = ["SMTWTFSSMTWTFSSMTWTFS", "T2345612312", "78910111213456789103456789", "141516171819201112131415161710111213141516", "212223242526271819202122232417181920212223", "28293031252627282924252627282930", "31", "SMTWTFSSMTWTFSSMTWTFS", "12345612341", "789101112135678910112345678", "14151617181920121314151617189101112131415", "212223242526271920212223242516171819202122", "28293026T2829303123242526272829", "30", "SMTWTFSSMTWTFSSMTWTFS", "123T561231T34567", "7891011121345678910891011121314", "141516171819201112131415161715161718192021", "212223242526271819202122232422232425262728", "28293031252627282930312930", "SMTWTFSSMTWTFSSMTWTFS", "12345121234567", "67891011123456789891011121314", "131415161718191011121314151615161718192021", "2021222324252617181920212223222324T262728", "272829303124252627T2930293031"];
+// const static_lines = [["2024 Holden Trash/Recycling Calendar"], ["January", "February", "March"], ["S", "M", "T", "W", "T", "F", "S", "S", "M", "T", "W", "T", "F", "S", "S", "M", "T", "W", "T", "F", "S"], ["T", "2", "3", "4", "5", "6", "1", "2", "3", "1", "2"], ["7", "8", "9", "10", "11", "12", "13", "4", "5", "6", "7", "8", "9", "10", "3", "4", "5", "6", "7", "8", "9"], ["14", "15", "16", "17", "18", "19", "20", "11", "12", "13", "14", "15", "16", "17", "10", "11", "12", "13", "14", "15", "16"], ["21", "22", "23", "24", "25", "26", "27", "18", "19", "20", "21", "22", "23", "24", "17", "18", "19", "20", "21", "22", "23"], ["28", "29", "30", "31", "25", "26", "27", "28", "29", "24", "25", "26", "27", "28", "29", "30"], ["31"], ["April", "May", "June"], ["S", "M", "T", "W", "T", "F", "S", "S", "M", "T", "W", "T", "F", "S", "S", "M", "T", "W", "T", "F", "S"], ["1", "2", "3", "4", "5", "6", "1", "2", "3", "4", "1"], ["7", "8", "9", "10", "11", "12", "13", "5", "6", "7", "8", "9", "10", "11", "2", "3", "4", "5", "6", "7", "8"],
+// ["14", "15", "16", "17", "18", "19", "20", "12", "13", "14", "15", "16", "17", "18", "9", "10", "11", "12", "13", "14", "15"], ["21", "22", "23", "24", "25", "26", "27", "19", "20", "21", "22", "23", "24", "25", "16", "17", "18", "19", "20", "21", "22"], ["28", "29", "30", "26", "T", "28", "29", "30", "31", "23", "24", "25", "26", "27", "28", "29"], ["30"], ["July", "August", "September"], ["S", "M", "T", "W", "T", "F", "S", "S", "M", "T", "W", "T", "F", "S", "S", "M", "T", "W", "T", "F", "S"], ["1", "2"], ["3", "T", "5", "6", "1", "2", "3", "1", "T", "3", "4", "5", "6", "7"], ["7", "8", "9", "10", "11", "12", "13", "4", "5", "6", "7", "8", "9", "10", "8", "9", "10", "11", "12", "13", "14"], ["14", "15", "16", "17", "18", "19", "20", "11", "12", "13", "14", "15", "16", "17", "15", "16", "17", "18", "19", "20", "21"], ["21", "22", "23", "24", "25", "26", "27", "18", "19", "20", "21", "22", "23", "24", "22", "23", "24", "25", "26", "27", "28"], ["28", "29", "30", "31", "25", "26", "27", "28", "29", "30", "31", "29", "30"], ["October", "November", "December"], ["S", "M", "T", "W", "T", "F", "S", "S", "M", "T", "W", "T", "F", "S", "S", "M", "T", "W", "T", "F", "S"], ["1", "2", "3", "4", "5", "1", "2", "1", "2", "3", "4", "5", "6", "7"], ["6", "7", "8", "9", "10", "11", "12", "3", "4", "5", "6", "7", "8", "9", "8", "9", "10", "11", "12", "13", "14"], ["13", "14", "15", "16", "17", "18", "19", "10", "11", "12", "13", "14", "15", "16", "15", "16", "17", "18", "19", "20", "21"], ["20", "21", "22", "23", "24", "25", "26", "17", "18", "19", "20", "21", "22", "23", "22", "23", "24", "T", "26", "27", "28"], ["27", "29", "29", "30", "31", "24", "25", "26", "27", "T", "29", "30", "29", "30", "31"], ["RECYCLING WEEKS ARE SHOWN IN GREEN"], ["All trash/recycling pickups will be moved forward ONE day due to the holiday. "], ["T"], ["(Ex. Monday will be picked up on Tuesday, Tuesday on Wednesday, etc.) "], ["Christmas Tree Chipping", "Wachusett Watershed Regional Recycling Center"],
+// ["131 Raymond Huntington Hwy., W. Boylston, MA"], ["January 6 & 13"], ["For more info:  www.wachusettearthday.org"], ["8:00 am to 2:30 pm", "978", "-", "464", "-", "2854"], ["DPW ", "-", "Lower Adams Rd", "Bulk / Recycling / Electronics / Propane / Textiles / Tires "], ["Batteries / Items for Reuse & Swap"], ["REMINDERS:"], ["OTHER SERVICES AVAILABLE"], ["•", "Lid must be closed on trash toter"], ["•", "No", "yard debris", "Document Shredding ", "-", "9 am to 12 pm  Dates TBD"], ["•  ", "No", "plastic bags or styrofoam in the "], ["First 2 boxes are free"], ["recycling"], ["Household Hazardous Products ", "-", "April 27 and October 26, 2024 "], ["•  ", "Overflow trash must be in blue ", "9am ", "-", "1pm ", "-", "Disposal Fees Apply"], ["bags. Blue Bags can be purchased at ", "      "], ["Town Hall, Big Y, Jed's and A1 Plus "], ["Convenience", "Please visit the Center's website at: ", "www.wachusettearthday.org"], ["•  ", "Cardboard must be broken down ", "for 2024  hours of operation and special collection dates"], ["into 2x2 pieces"], ["FOR MORE INFORMATION ON COMPOSTING, HAZARDOUS WASTE DATES, TRASH & RECYCLING"], ["SEE OUR WEBSITE ", "www.holdenma.gov", "CASELLA WASTE SERVICES 888", "-", "532", "-", "2735 ", "(Bulk Pick", "-", "Up)"]
+// ];
+
 
 /**
  *
@@ -8,7 +12,7 @@
  * @param {number} [year=2024]
  * @return {obj} data representing the trash and recycling days 
  */
-function getTrashDays(lines, dayOfWeekIndex, year = 2024)
+export function getTrashRecyclingDays(lines, dayOfWeekIndex, recycleScheme = "biweekly second", year = 2024)
 {
     const holidays = getHolidays(lines);
     let trashDays = [];
@@ -17,8 +21,7 @@ function getTrashDays(lines, dayOfWeekIndex, year = 2024)
     const d = new Date(year, 0, 1);
     const jan1DOW = d.getDay();
     const firstDOWOffset = (dayOfWeekIndex - jan1DOW + 7) % 7;
-
-    let isRecyclingWeek = false;
+    let isRecyclingWeek = (recycleScheme == "biweekly_first");
 
     for (let i = 0; 1 + firstDOWOffset + i < 367; i += 7)
     {
@@ -44,7 +47,10 @@ function getTrashDays(lines, dayOfWeekIndex, year = 2024)
             recyclingDays.push(dateToPush);
         }
 
-        isRecyclingWeek = !isRecyclingWeek;
+        if (recycleScheme.startsWith("biweekly"))
+        {
+            isRecyclingWeek = !isRecyclingWeek;
+        }
     }
 
     const today = new Date();
@@ -122,8 +128,11 @@ function getHolidays(lines, year = 2024)
  * @param {String} text
  * @return {int} most commonly occuring year in the text
  */
-function getLikelyYear(text)
+export function getLikelyYear(lines)
 {
+    const filteredLines = lines.filter(x => determineLineNature(x) == 'unknown');
+    const text = filteredLines.join(" ");
+
     const now = new Date();
     const thisYear = now.getFullYear();
     let highestCount = 0;
@@ -154,60 +163,116 @@ function getLikelyYear(text)
  */
 function getMonths(linesArray)
 {
-    const headerRowRegex = /^SMTW/g;
+    const NUM_MONTH_COLUMNS = 3;
 
-    const monthData = {};
-    const monthsInRow = 3;
+    let result = {};
+    let bigRowCounter = -1;
 
-    let bigRowIndex = -1;
-    let monthIndex = 0;
-
-    for (let row of linesArray)
+    for (let lineIndex = 0; lineIndex < linesArray.length; lineIndex++)
     {
-        const isAHeaderRow = headerRowRegex.test(row);
-        monthData[monthIndex] = monthData[monthIndex] ?? [];
+        const line = linesArray[lineIndex];
+        const nature = determineLineNature(line);
 
-        if (!isAHeaderRow)
+        if (nature == "title" || nature == "day_headers")
         {
-            const numberArray = getConsecutiveNumbers(row);
+            continue;
+        }
+        else if (nature == "month_headers")
+        {
+            bigRowCounter += 1;
 
-            for (let weekIndex of Array.from(Array(monthsInRow).keys()))
+            for (let monthIndex in line)
             {
-                let monthIndex = (bigRowIndex * 3) + +weekIndex;
-
-                let week;
-                let w = weekIndex;
-                do
-                {
-                    week = numberArray[w];
-                    w--;
-
-                } while (week === undefined);
-
-                monthData[monthIndex] = monthData[monthIndex] ?? [];
-                const prevLast = monthData[monthIndex][monthData[monthIndex].length - 1];
-
-                if (monthData[monthIndex].length == 0 || +(prevLast) + 1 == +week[0])
-                {
-                    monthData[monthIndex].push(...week);
-                }
-                else if (prevLast == "T" || week[0] == "T")
-                {
-                    monthData[monthIndex].push(...week);
-                }
-
+                result[bigRowCounter * NUM_MONTH_COLUMNS + +monthIndex] = [];
             }
 
         }
-        else
+        else if (nature == "dates")
         {
-            bigRowIndex += 1;
+            let rowMonthIndex = 0;
+            let weekCount = 0;
+
+            if (line.length == 1)
+            {
+                for (let i = 0; i < NUM_MONTH_COLUMNS; i += 1)
+                {
+                    const possibleMonth = result[bigRowCounter * NUM_MONTH_COLUMNS + i];
+                    const lastDay = possibleMonth[possibleMonth.length - 1];
+                    const unattachedDay = line[0];
+
+                    if (+lastDay + 1 == +unattachedDay)
+                    {
+                        result[bigRowCounter * NUM_MONTH_COLUMNS + i].push(unattachedDay);
+                    }
+                }
+            }
+            else
+            {
+                for (let dateIndex in line)
+                {
+                    const dateNum = line[dateIndex];
+                    const nextDate = line[+dateIndex + 1] ? line[+dateIndex + 1] : null;
+                    const prevDate = line[+dateIndex - 1] ? line[+dateIndex - 1] : null;
+
+                    const offset = bigRowCounter * NUM_MONTH_COLUMNS;
+
+                    result[offset + rowMonthIndex].push(dateNum);
+
+                    if (+nextDate < +dateNum)
+                    {
+                        weekCount = 0;
+                        rowMonthIndex += 1;
+                    }
+                    else
+                    {
+                        weekCount += 1;
+                    }
+
+                }
+
+            }
         }
     }
 
-    return monthData;
+    return result;
 
 }
+
+//month_headers, day_headers, dates, title, unknown
+
+function determineLineNature(line)
+{
+    const monthNames = [
+        "January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December"
+    ];
+    const dayAbbrevs = ["S", "M", "T", "W", "T", "F", "S"];
+    const dates = ["T", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10",
+        "11", "12", "13", "14", "15", "16", "17", "18", "19", "20",
+        "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31"];
+
+    // Check if every element in the array is a valid month name
+    if (line.every(item => monthNames.includes(item)))
+    {
+        return "month_headers";
+    }
+    else if (line.every(item => dayAbbrevs.includes(item)))
+    {
+        return "day_headers";
+    }
+    else if (line.every(item => dates.includes(item)))
+    {
+        return "dates";
+    }
+    else if (line[0].includes("Trash") && line[0].includes("Calendar"))
+    {
+        return "title";
+    }
+
+    return "unknown";
+
+}
+
 /**
  * Takes a string of integers and attempts to interpret it as three groups of consecutive days of the month in the same week.
  *
@@ -364,4 +429,4 @@ function getFirstNumber(numString)
 
 }
 
-module.exports = { getTrashDays, getLikelyYear };
+// console.log(getTrashRecyclingDays(static_lines, 3, 2024)); 
