@@ -54,15 +54,39 @@ export async function onboardBindicator(household, photonId)
 
 
 ///BUTTON STATES
-export async function getButtonState(photonId, category)
+export async function getBindicatorData(photonId)
 {
-    return new Promise((resolve, reject) =>
+    return await new Promise(async (resolve, reject) =>
     {
-        db.collection('bindicators').doc(photonId).get()
+        return await db.collection('bindicators').doc(photonId).get()
             .then(
                 (doc) =>
                 {
-                    resolve({ state: doc.data()[category + '_on'] });
+                    const data = doc.data();
+                    const result = {
+                        trash_on: data.trash_on,
+                        recycle_on: data.recycle_on,
+                        household_name: data.household_name,
+                    };
+                    resolve(result);
+                    return result;
+                }
+            );
+    });
+}
+
+export async function getButtonState(photonId, category)
+{
+    return await new Promise(async (resolve, reject) =>
+    {
+        return await db.collection('bindicators').doc(photonId).get()
+            .then(
+                (doc) =>
+                {
+                    const data = doc.data();
+                    const result = { state: data[category + '_on'] };
+                    resolve(result);
+                    return result;
                 }
             );
     });
@@ -82,7 +106,7 @@ export async function setButtonState(photonId, category, value = null)
             db.collection('bindicators').doc(photonId).update({ [category + '_on']: value })
                 .then(() =>
                 {
-                    papi.publishParticleEvent("button_state_changed", { photon_id: photonID, category, value });
+                    papi.publishParticleEvent("button_state_changed", { photon_id: photonId, category, value });
                     resolve();
                 });
 

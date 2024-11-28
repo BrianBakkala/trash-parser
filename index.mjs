@@ -4,13 +4,14 @@
 import * as papi from './particle_api.mjs';
 import * as db from './db.mjs';
 import * as fb from './fb.mjs';
+import * as util from './utility.mjs';
 
 import server from 'server';
 const { get, post } = server.router;
 const { header } = server.reply;
 
 
-const jsonHeader = header('Content-Type', 'application/json');
+const jsonHeader = function (ctx) { header('Content-Type', 'application/json'); };
 
 // Answers to any request
 server({ security: { csrf: false } }, [
@@ -37,34 +38,50 @@ server({ security: { csrf: false } }, [
     // get('/hooks/check-schedule/:photonid', ctx => jsonHeader, async ctx => await db.checkSchedule('u1234', "trash")),
     get('/db/set-test', ctx => jsonHeader, async ctx => await db.setButtonState('51wt', "trash")),
 
-    post('/hooks/set-button-state', ctx => jsonHeader,
+
+    post('/hooks/set-button-state', jsonHeader,
         async function (ctx)
         {
-            if (ctx.data[process.env.SECURITY_QUERY_KEY] == process.env.SECURITY_QUERY_VALUE)
-            {
-                await fb.setButtonState(ctx.data.coreid, ctx.data.data);
-                return { success: true };
-            }
-            else
-            {
-                return { success: false, reason: "Security check failed." };
-            }
-        }
-    ),
-    post('/hooks/get-button-state', ctx => jsonHeader,
-        async function (ctx)
-        {
-            if (ctx.data["8LplHeuLKUnwogNYuxOD1YioIQ08WyN39jkiN9JQ6Zsyk7dn2V"] == "lBdUeV2wS4IhVjhlcZxoAujMMVOCydUC2VNXqaP63r6e90cAJL")
-            {
-                return await fb.getButtonState(ctx.data.coreid, ctx.data.data);
-            }
-            else
-            {
-                return { success: false, reason: "Security check failed." };
-            }
+            return await softAuth(ctx,
+                async function (ctx)
+                {
+                    return await fb.setButtonState(ctx.data.coreid, ctx.data.data);
+                });
         }
     ),
 
+    post('/hooks/get-button-state', jsonHeader,
+        async function (ctx)
+        {
+            return await softAuth(ctx,
+                async function (ctx)
+                {
+                    return await fb.getButtonState(ctx.data.coreid, ctx.data.data);
+                });
+        }
+    ),
+
+    post('/hooks/get-bindicator-data', jsonHeader,
+        async function (ctx)
+        {
+            return await checkAuth(ctx,
+                async function (ctx)
+                {
+                    return await fb.getBindicatorData(ctx.data.coreid);
+                });
+        }
+    ),
+
+    post('/hooks/onboard-bindicator', jsonHeader,
+        async function (ctx)
+        {
+            return await checkAuth(ctx,
+                async function (ctx)
+                {
+                    //TODO
+                });
+        }
+    ),
 
     get('/hooks/check-schedule', ctx => jsonHeader, async ctx => await db.checkSchedule()),
     get('/hooks/override/:category/:value', ctx => jsonHeader, async ctx => await fb.setButtonStatesForAllBindicators(ctx.params.category, ctx.params.value)),
@@ -83,3 +100,29 @@ server({ security: { csrf: false } }, [
 
 
 ]);
+
+async function checkAuth(ctx, callback)
+{
+    const authHeader = ctx.headers.authorization;
+
+    if (!authHeader || !authHeader.startsWith('Basic '))
+    {
+        return { success: false, reason: "Security check failed. No auth credentials." };
+    }
+
+    const base64Creds = authHeader.split(' ')[1];
+    const creds = Buffer.from(base64Creds, 'base64').toString('utf-8');
+
+    const [username, password] = creds.split(':');
+
+    // Perform your authentication logic here
+    if (username === process.env.BASIC_AUTH_USER && password === process.env.BASIC_AUTH_PASSWORD)
+    {
+        const data = await callback(ctx);
+        return { success: true, result: { ...data } };
+
+    }
+
+    return { success: false, reason: "Security check failed. Invalid credentials." };
+
+};

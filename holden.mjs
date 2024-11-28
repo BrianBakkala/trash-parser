@@ -15,6 +15,8 @@ export async function display(dowLetter = null)
     if (dowLetter == null)
     {
         const streetNameRegex = RegExp(process.env.STREET_NAME_REGEX);
+        const streetNameRegexGroup = process.env.STREET_NAME_REGEX_DAY_GROUP;
+
         dowLetter = await util.getPDFfromURL(process.env.STREET_PDF_URL,
 
             function (items, table)
@@ -34,13 +36,13 @@ export async function display(dowLetter = null)
                     console.error("Couldn't find street.");
                 }
 
-                const returnable = table[desiredY].join(" ").match(streetNameRegex)[2];
+                const returnable = table[desiredY].join(" ").match(streetNameRegex)[streetNameRegexGroup];
                 // console.log(returnable);
 
                 return returnable;
 
                 // return {
-                //     potential_match: table[desiredY].join(" ").match(streetNameRegex)[2],
+                //     potential_match: table[desiredY].join(" ").match(streetNameRegex)[streetNameRegexGroup],
                 //     pdf_text: data.text,
                 // };
             }
