@@ -11,7 +11,7 @@ const { get, post } = server.router;
 const { header } = server.reply;
 
 
-const jsonHeader = function (ctx) { header('Content-Type', 'application/json'); };
+const jsonHeader = header('Content-Type', 'application/json');;
 
 // Answers to any request
 server({ security: { csrf: false } }, [
@@ -36,13 +36,13 @@ server({ security: { csrf: false } }, [
 
 
     // get('/hooks/check-schedule/:photonid', ctx => jsonHeader, async ctx => await db.checkSchedule('u1234', "trash")),
-    get('/db/set-test', ctx => jsonHeader, async ctx => await db.setButtonState('51wt', "trash")),
+    // get('/db/set-test', ctx => jsonHeader, async ctx => await db.setButtonState('51wt', "trash")),
 
 
-    post('/hooks/set-button-state', jsonHeader,
+    post('/hooks/set-button-state', ctx => jsonHeader,
         async function (ctx)
         {
-            return await softAuth(ctx,
+            return await checkAuth(ctx,
                 async function (ctx)
                 {
                     return await fb.setButtonState(ctx.data.coreid, ctx.data.data);
@@ -50,10 +50,10 @@ server({ security: { csrf: false } }, [
         }
     ),
 
-    post('/hooks/get-button-state', jsonHeader,
+    post('/hooks/get-button-state', ctx => jsonHeader,
         async function (ctx)
         {
-            return await softAuth(ctx,
+            return await checkAuth(ctx,
                 async function (ctx)
                 {
                     return await fb.getButtonState(ctx.data.coreid, ctx.data.data);
@@ -61,7 +61,7 @@ server({ security: { csrf: false } }, [
         }
     ),
 
-    post('/hooks/get-bindicator-data', jsonHeader,
+    post('/hooks/get-bindicator-data', ctx => jsonHeader,
         async function (ctx)
         {
             return await checkAuth(ctx,
@@ -72,13 +72,24 @@ server({ security: { csrf: false } }, [
         }
     ),
 
-    post('/hooks/onboard-bindicator', jsonHeader,
+    post('/hooks/onboard-bindicator', ctx => jsonHeader,
         async function (ctx)
         {
             return await checkAuth(ctx,
                 async function (ctx)
                 {
-                    //TODO
+                    return await fb.onboardBindicator(null, ctx.data.coreid);
+                });
+        }
+    ),
+
+    post('/hooks/onboard-bindicator/:household', ctx => jsonHeader,
+        async function (ctx)
+        {
+            return await checkAuth(ctx,
+                async function (ctx)
+                {
+                    return await fb.onboardBindicator(ctx.params.household, ctx.data.coreid);
                 });
         }
     ),
@@ -86,16 +97,17 @@ server({ security: { csrf: false } }, [
     get('/hooks/check-schedule', ctx => jsonHeader, async ctx => await db.checkSchedule()),
     get('/hooks/override/:category/:value', ctx => jsonHeader, async ctx => await fb.setButtonStatesForAllBindicators(ctx.params.category, ctx.params.value)),
 
-
-
     get('/hooks/generate-days', ctx => jsonHeader, async ctx => await fb.generateTrashRecycleDays()),
+
+
+
 
     get('/papi/test', ctx => jsonHeader, async ctx => await papi.test()),
 
-    get('/fb/test', ctx => jsonHeader, async ctx => await fb.test()),
-    get('/fb/gbs', ctx => jsonHeader, async ctx => await fb.getButtonState('123456', 'trash')),
-    get('/fb/sbs', ctx => jsonHeader, async ctx => await fb.setButtonState('123456', 'trash')),
-    get('/fb/shbs', ctx => jsonHeader, async ctx => await fb.setHouseholdButtonStates('bakkala_holden', 'trash')),
+    // get('/fb/test', ctx => jsonHeader, async ctx => await fb.test()),
+    // get('/fb/gbs', ctx => jsonHeader, async ctx => await fb.getButtonState('123456', 'trash')),
+    // get('/fb/sbs', ctx => jsonHeader, async ctx => await fb.setButtonState('123456', 'trash')),
+    // get('/fb/shbs', ctx => jsonHeader, async ctx => await fb.setHouseholdButtonStates('bakkala_holden', 'trash')),
 
 
 
@@ -119,6 +131,11 @@ async function checkAuth(ctx, callback)
     if (username === process.env.BASIC_AUTH_USER && password === process.env.BASIC_AUTH_PASSWORD)
     {
         const data = await callback(ctx);
+        if (data && data.error)
+        {
+            return { success: false, error: data.error, result: { ...data } };
+
+        }
         return { success: true, result: { ...data } };
 
     }

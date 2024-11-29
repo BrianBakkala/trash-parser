@@ -3,6 +3,7 @@ import * as calendar from './calendar.mjs';
 import * as holden from './holden.mjs';
 import * as util from './utility.mjs';
 import * as papi from './particle_api.mjs';
+import * as crypto from 'crypto';
 
 import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
@@ -44,9 +45,16 @@ export async function createBindicator(household, photonId)
 
 export async function onboardBindicator(household, photonId)
 {
+    if (!household)
+    {
+        household = uuid();
+    }
+
     return new Promise((resolve, reject) =>
     {
-        createBindicator(household, photonId).then(() => resolve());
+        createBindicator(household, photonId)
+            .then(() => generateTrashRecycleDays(photonId))
+            .then(() => resolve());
     });
 }
 
@@ -56,6 +64,7 @@ export async function onboardBindicator(household, photonId)
 ///BUTTON STATES
 export async function getBindicatorData(photonId)
 {
+    console.log(uuid());
     return await new Promise(async (resolve, reject) =>
     {
         return await db.collection('bindicators').doc(photonId).get()
@@ -63,11 +72,21 @@ export async function getBindicatorData(photonId)
                 (doc) =>
                 {
                     const data = doc.data();
-                    const result = {
-                        trash_on: data.trash_on,
-                        recycle_on: data.recycle_on,
-                        household_name: data.household_name,
-                    };
+                    let result;
+                    if (!data)
+                    {
+                        result = { error: "Bindicator not found." };
+                    }
+                    else
+                    {
+
+                        result = {
+                            trash_on: data.trash_on,
+                            recycle_on: data.recycle_on,
+                            household_name: data.household_name,
+                        };
+
+                    }
                     resolve(result);
                     return result;
                 }
@@ -114,7 +133,7 @@ export async function setButtonState(photonId, category, value = null)
     });
 }
 
-export async function setButtonStatesForDocumentGroup(docGroup, category, value = null) 
+async function setButtonStatesForDocumentGroup(docGroup, category, value = null) 
 {
     return new Promise(async (resolve, reject) =>
     {
@@ -140,7 +159,7 @@ export async function setButtonStatesForDocumentGroup(docGroup, category, value 
     });
 }
 
-export async function setHouseholdButtonStates(household, category, value = null) 
+async function setHouseholdButtonStates(household, category, value = null) 
 {
     return new Promise(async (resolve, reject) =>
     {
@@ -154,7 +173,7 @@ export async function setHouseholdButtonStates(household, category, value = null
     });
 }
 
-export async function setButtonStatesForAllBindicators(category, value = null) 
+async function setButtonStatesForAllBindicators(category, value = null) 
 {
     return new Promise(async (resolve, reject) =>
     {
@@ -168,9 +187,20 @@ export async function setButtonStatesForAllBindicators(category, value = null)
     });
 }
 
-export async function generateTrashRecycleDays(category, value = null) 
+export async function generateTrashRecycleDays(bindicator) 
 {
-    const docGroup = await db.collection('bindicators').get();
+    let docGroup;
+
+    if (!bindicator)
+    {
+        docGroup = await db.collection('bindicators').get();
+    }
+    else
+    {
+        docGroup = await db.collection('bindicators').where('__name__', '==', bindicator).get();
+    }
+
+
     const holdenDB = await holden.display();
 
     return new Promise(async (resolve, reject) =>
@@ -203,11 +233,10 @@ export async function generateTrashRecycleDays(category, value = null)
     });
 }
 
-
-
-
-
-
+function uuid()
+{
+    return crypto.randomUUID();
+}
 
 
 
