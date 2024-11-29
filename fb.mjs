@@ -133,7 +133,7 @@ export async function setButtonState(photonId, category, value = null)
     });
 }
 
-async function setButtonStatesForDocumentGroup(docGroup, category, value = null) 
+async function setButtonStatesForDocumentGroup(docGroup, category, value) 
 {
     return new Promise(async (resolve, reject) =>
     {
@@ -230,6 +230,68 @@ export async function generateTrashRecycleDays(bindicator)
             await batch.commit().then(() => { resolve(); });
         }
 
+    });
+}
+
+export async function checkSchedule(bindicator)
+{
+    const d = new Date();
+    const tomorrow = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1);
+
+    const todayDateString = d.toLocaleDateString('en-CA');
+    const tomorrowDateString = tomorrow.toLocaleDateString('en-CA');
+
+    let docGroup;
+
+    if (!bindicator)
+    {
+        docGroup = await db.collection('bindicators').get();
+    }
+    else
+    {
+        docGroup = await db.collection('bindicators').where('__name__', '==', bindicator).get();
+    }
+
+    let result = [];
+
+    return await new Promise(async (resolve, reject) =>
+    {
+        const batch = db.batch();
+
+        docGroup.forEach((doc) =>
+        {
+            const data = doc.data();
+
+            if (data.trash_days && data.trash_days.includes(todayDateString))
+            {
+                //trash was this morning, missed it
+                result.push({ household: data.household_name, category: "trash", value: false, message: "trash was this morning, missed it" });
+                batch.update(doc.ref, { trash_on: false });
+            }
+            if (data.trash_days && data.trash_days.includes(tomorrowDateString))
+            {
+                //trash is tomorrow, light up
+                result.push({ household: data.household_name, category: "trash", value: true, message: "trash is tomorrow, light up" });
+                batch.update(doc.ref, { trash_on: true });
+            }
+
+            if (data.recycle_days && data.recycle_days.includes(todayDateString))
+            {
+                //recycle was this morning, missed it
+                result.push({ household: data.household_name, category: "recycle", value: false, message: "recycle was this morning, missed it" });
+                batch.update(doc.ref, { recycle_on: false });
+            }
+            if (data.recycle_days && data.recycle_days.includes(tomorrowDateString))
+            {
+                //recycle is tomorrow, light up
+                result.push({ household: data.household_name, category: "recycle", value: true, message: "recycle is tomorrow, light up" });
+                batch.update(doc.ref, { recycle_on: true });
+            }
+
+        });
+
+        await batch.commit().then(() => { resolve({ result }); });
+        return { result };
     });
 }
 

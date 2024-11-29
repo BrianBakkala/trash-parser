@@ -1,9 +1,6 @@
 import * as parsing from './parsing.mjs';
 import * as util from './utility.mjs';
 
-import { PdfReader } from 'pdfreader-fixed';
-
-
 /**
  * displays the relevant data for trash
  *

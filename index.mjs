@@ -2,7 +2,6 @@
 // https://bindicator-439415.ue.r.appspot.com/
 
 import * as papi from './particle_api.mjs';
-import * as db from './db.mjs';
 import * as fb from './fb.mjs';
 import * as util from './utility.mjs';
 
@@ -27,18 +26,6 @@ server({ security: { csrf: false } }, [
     // get('/test/:trash/:recycling', ctx => jsonHeader, async ctx => await holden.display_test(ctx.params.trash, ctx.params.recycling)),
 
 
-    // get('/db/get-all', ctx => jsonHeader, async ctx => await db.getAll()),
-
-    // get('/db/get/:a', ctx => jsonHeader, async ctx => await db.get(ctx.params.a)),
-    // get('/db/get/:a/:b', ctx => jsonHeader, async ctx => await db.get(ctx.params.a, ctx.params.b)),
-
-    // get('/db/get-all', ctx => jsonHeader, async ctx => await db.getAll()),
-
-
-    // get('/hooks/check-schedule/:photonid', ctx => jsonHeader, async ctx => await db.checkSchedule('u1234', "trash")),
-    // get('/db/set-test', ctx => jsonHeader, async ctx => await db.setButtonState('51wt', "trash")),
-
-
     post('/hooks/set-button-state', ctx => jsonHeader,
         async function (ctx)
         {
@@ -61,6 +48,8 @@ server({ security: { csrf: false } }, [
         }
     ),
 
+
+
     post('/hooks/get-bindicator-data', ctx => jsonHeader,
         async function (ctx)
         {
@@ -71,6 +60,8 @@ server({ security: { csrf: false } }, [
                 });
         }
     ),
+
+
 
     post('/hooks/onboard-bindicator', ctx => jsonHeader,
         async function (ctx)
@@ -94,13 +85,60 @@ server({ security: { csrf: false } }, [
         }
     ),
 
-    get('/hooks/check-schedule', ctx => jsonHeader, async ctx => await db.checkSchedule()),
+
+
+    post('/hooks/check-schedule', ctx => jsonHeader,
+        async function (ctx)
+        {
+            return await checkAuth(ctx,
+                async function (ctx)
+                {
+                    return await fb.checkSchedule();
+                });
+        }
+    ),
+
+    post('/hooks/check-schedule/:bindicator', ctx => jsonHeader,
+        async function (ctx)
+        {
+            return await checkAuth(ctx,
+                async function (ctx)
+                {
+                    return await fb.checkSchedule(ctx.params.bindicator);
+                });
+        }
+    ),
+
+    post('/hooks/generate-days', ctx => jsonHeader,
+        async function (ctx)
+        {
+            return await checkAuth(ctx,
+                async function (ctx)
+                {
+                    return await fb.generateTrashRecycleDays();
+                });
+        }
+    ),
+
+    post('/hooks/generate-days/:bindicator', ctx => jsonHeader,
+        async function (ctx)
+        {
+            return await checkAuth(ctx,
+                async function (ctx)
+                {
+                    return await fb.generateTrashRecycleDays(ctx.params.bindicator);
+                });
+        }
+    ),
+
+
+    // /hooks/settings/set-schedule/:category
+    // /hooks/settings/set-scheme/:category
+    // /hooks/settings/set-holidays
+
+
+
     get('/hooks/override/:category/:value', ctx => jsonHeader, async ctx => await fb.setButtonStatesForAllBindicators(ctx.params.category, ctx.params.value)),
-
-    get('/hooks/generate-days', ctx => jsonHeader, async ctx => await fb.generateTrashRecycleDays()),
-
-
-
 
     get('/papi/test', ctx => jsonHeader, async ctx => await papi.test()),
 
