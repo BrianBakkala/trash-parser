@@ -3,6 +3,7 @@
 
 import * as papi from './particle_api.mjs';
 import * as fb from './fb.mjs';
+import * as holden from './holden.mjs';
 import * as util from './utility.mjs';
 
 import server from 'server';
@@ -21,7 +22,7 @@ server({ security: { csrf: false } }, [
     // get('/holden/simple', ctx => jsonHeader, async ctx => await holden.display_simple()),
     // get('/holden/full/:dow', ctx => jsonHeader, async ctx => await holden.display(ctx.params.dow)),
     // get('/holden/simple/:dow', ctx => jsonHeader, async ctx => await holden.display_simple(ctx.params.dow)),
-    // get('/test', ctx => jsonHeader, async ctx => await holden.display_test(true, true)),
+    get('/test', ctx => jsonHeader, async ctx => { return { success: true, message: "hello there" }; }),
     // get('/test/random', ctx => jsonHeader, async ctx => await holden.display_test(Math.random() < 0.5, Math.random() < 0.5)),
     // get('/test/:trash/:recycling', ctx => jsonHeader, async ctx => await holden.display_test(ctx.params.trash, ctx.params.recycling)),
 
@@ -63,6 +64,15 @@ server({ security: { csrf: false } }, [
 
 
 
+    post('/hooks/get-bindicators-for-household', ctx => jsonHeader,
+        async function (ctx)
+        {
+            const data = typeof ctx.data === 'string' ? JSON.parse(ctx.data) : ctx.data;
+            return await fb.getBindicators(data.household_id);
+        }
+    ),
+
+
     post('/hooks/onboard-bindicator', ctx => jsonHeader,
         async function (ctx)
         {
@@ -74,13 +84,13 @@ server({ security: { csrf: false } }, [
         }
     ),
 
-    post('/hooks/onboard-bindicator/:household', ctx => jsonHeader,
+    post('/hooks/onboard-bindicator/:householdId', ctx => jsonHeader,
         async function (ctx)
         {
             return await checkAuth(ctx,
                 async function (ctx)
                 {
-                    return await fb.onboardBindicator(ctx.params.household, ctx.data.coreid);
+                    return await fb.onboardBindicator(ctx.params.householdId, ctx.data.coreid);
                 });
         }
     ),
@@ -140,7 +150,7 @@ server({ security: { csrf: false } }, [
 
     get('/hooks/override/:category/:value', ctx => jsonHeader, async ctx => await fb.setButtonStatesForAllBindicators(ctx.params.category, ctx.params.value)),
 
-    get('/papi/test', ctx => jsonHeader, async ctx => await papi.test()),
+    // get('/papi/test', ctx => jsonHeader, async ctx => await papi.test()),
 
     // get('/fb/test', ctx => jsonHeader, async ctx => await fb.test()),
     // get('/fb/gbs', ctx => jsonHeader, async ctx => await fb.getButtonState('123456', 'trash')),

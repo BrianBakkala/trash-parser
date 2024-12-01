@@ -23,12 +23,14 @@ async function intializeFirebase()
 }
 ///ONBOARDING HOOKS
 
-export async function createBindicator(household, photonId)
+export async function createBindicator(householdId, photonId)
 {
     await db.collection('bindicators').doc(photonId).set(
         {
             photon_id: photonId,
-            household_name: household,
+            household_id: householdId,
+            household_name: "",
+
             trash_on: false,
             recycle_on: false,
 
@@ -43,19 +45,40 @@ export async function createBindicator(household, photonId)
     );
 }
 
-export async function onboardBindicator(household, photonId)
+export async function onboardBindicator(householdId, photonId)
 {
-    if (!household)
-    {
-        household = uuid();
-    }
-
     return new Promise((resolve, reject) =>
     {
-        createBindicator(household, photonId)
+        createBindicator(householdId, photonId)
             .then(() => generateTrashRecycleDays(photonId))
             .then(() => resolve());
     });
+}
+
+export async function getBindicators(householdId)
+{
+    try
+    {
+        const querySnapshot = await db.collection('bindicators')
+            .where('household_id', '==', householdId).get();
+
+        let bindicators = { bindicators: [] };
+        let count = 0;
+        querySnapshot.forEach((doc) =>
+        {
+            const data = doc.data();
+            bindicators.bindicators.push(data);
+            count += 1;
+        });
+
+        return { count, ...bindicators };
+
+    }
+    catch (error)
+    {
+        console.error("Error fetching bindicators:", error);
+        throw error;
+    }
 }
 
 
@@ -64,7 +87,6 @@ export async function onboardBindicator(household, photonId)
 ///BUTTON STATES
 export async function getBindicatorData(photonId)
 {
-    console.log(uuid());
     return await new Promise(async (resolve, reject) =>
     {
         return await db.collection('bindicators').doc(photonId).get()
@@ -83,7 +105,7 @@ export async function getBindicatorData(photonId)
                         result = {
                             trash_on: data.trash_on,
                             recycle_on: data.recycle_on,
-                            household_name: data.household_name,
+                            household_id: data.household_id,
                         };
 
                     }
@@ -165,7 +187,7 @@ async function setHouseholdButtonStates(household, category, value = null)
     {
         setButtonStatesForDocumentGroup(
 
-            await db.collection('bindicators').where('household_name', '==', household).get(),
+            await db.collection('bindicators').where('household_id', '==', household).get(),
 
             category,
             value
@@ -213,7 +235,7 @@ export async function generateTrashRecycleDays(bindicator)
             docGroup.forEach((doc) =>
             {
                 const data = doc.data();
-                if (data.household_name == "bakkala_holden")
+                if (data.household_id == "bakkala_holden")
                 {
                     batch.update(doc.ref, { trash_days: holdenDB.trash_days, recycle_days: holdenDB.recycling_days });
                 }
@@ -265,26 +287,26 @@ export async function checkSchedule(bindicator)
             if (data.trash_days && data.trash_days.includes(todayDateString))
             {
                 //trash was this morning, missed it
-                result.push({ household: data.household_name, category: "trash", value: false, message: "trash was this morning, missed it" });
+                result.push({ household: data.household_id, category: "trash", value: false, message: "trash was this morning, missed it" });
                 batch.update(doc.ref, { trash_on: false });
             }
             if (data.trash_days && data.trash_days.includes(tomorrowDateString))
             {
                 //trash is tomorrow, light up
-                result.push({ household: data.household_name, category: "trash", value: true, message: "trash is tomorrow, light up" });
+                result.push({ household: data.household_id, category: "trash", value: true, message: "trash is tomorrow, light up" });
                 batch.update(doc.ref, { trash_on: true });
             }
 
             if (data.recycle_days && data.recycle_days.includes(todayDateString))
             {
                 //recycle was this morning, missed it
-                result.push({ household: data.household_name, category: "recycle", value: false, message: "recycle was this morning, missed it" });
+                result.push({ household: data.household_id, category: "recycle", value: false, message: "recycle was this morning, missed it" });
                 batch.update(doc.ref, { recycle_on: false });
             }
             if (data.recycle_days && data.recycle_days.includes(tomorrowDateString))
             {
                 //recycle is tomorrow, light up
-                result.push({ household: data.household_name, category: "recycle", value: true, message: "recycle is tomorrow, light up" });
+                result.push({ household: data.household_id, category: "recycle", value: true, message: "recycle is tomorrow, light up" });
                 batch.update(doc.ref, { recycle_on: true });
             }
 
