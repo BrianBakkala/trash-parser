@@ -147,7 +147,7 @@ server({ security: { csrf: false } }, [
             return await checkAuth(ctx,
                 async function (ctx)
                 {
-                    return await fb.setProvisioningBindicator(ctx.data.ssid, ctx.data.setup_code);
+                    return await fb.addProvisioningBindicator(ctx.data.verification_key, ctx.data.device_uuid);
                     //TODO send this from app
                 });
         }
