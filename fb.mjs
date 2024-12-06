@@ -209,6 +209,9 @@ async function setButtonStatesForAllBindicators(category, value = null)
     });
 }
 
+
+
+///SCHEDULE
 export async function generateTrashRecycleDays(bindicator) 
 {
     let docGroup;
@@ -316,6 +319,59 @@ export async function checkSchedule(bindicator)
         return { result };
     });
 }
+
+
+///AUTH
+
+export async function whoAmI(data) 
+{
+    let docGroup;
+
+    if (!bindicator)
+    {
+        docGroup = await db.collection('bindicators').get();
+    }
+    else
+    {
+        docGroup = await db.collection('bindicators').where('__name__', '==', bindicator).get();
+    }
+
+
+    const holdenDB = await holden.display();
+
+    return new Promise(async (resolve, reject) =>
+    {
+        if (!docGroup.empty)
+        {
+            // Start a batch  
+            const batch = db.batch();
+
+            docGroup.forEach((doc) =>
+            {
+                const data = doc.data();
+                if (data.household_id == "bakkala_holden")
+                {
+                    batch.update(doc.ref, { trash_days: holdenDB.trash_days, recycle_days: holdenDB.recycling_days });
+                }
+                else
+                {
+                    const trashDays = calendar.getDays(data.trash_schedule, data.trash_scheme);
+                    const recycleDays = calendar.getDays(data.recycle_schedule, data.recycle_scheme);
+
+                    batch.update(doc.ref, { trash_days: trashDays.days, recycle_days: recycleDays.days });
+                }
+            });
+
+            // Commit the batch  
+            await batch.commit().then(() => { resolve(); });
+        }
+
+    });
+}
+
+
+
+///UTIL
 
 function uuid()
 {

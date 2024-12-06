@@ -141,6 +141,17 @@ server({ security: { csrf: false } }, [
         }
     ),
 
+    post('/hooks/whoami', ctx => jsonHeader,
+        async function (ctx)
+        {
+            return await checkAuth(ctx,
+                async function (ctx)
+                {
+                    return await fb.whoAmI(ctx.data.photon_id);
+                });
+        }
+    ), 
+
 
     // /hooks/settings/set-schedule/:category
     // /hooks/settings/set-scheme/:category
