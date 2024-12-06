@@ -116,6 +116,72 @@ export async function getBindicatorData(photonId)
     });
 }
 
+
+export async function getBindicatorDocument(obj)
+{
+    const collection = db.collection('bindicators');
+    let snapshotStructure;
+
+    if (obj.hasOwnProperty("photon_id"))
+    {
+        snapshotStructure = collection
+            .where('photon_id', '==', obj.photon_id);
+    }
+    else if (obj.hasOwnProperty("monitoring_uuid"))
+    {
+        snapshotStructure = collection
+            .where('monitoring_uuid', '==', obj.monitoring_uuid);
+    }
+    else if (obj.hasOwnProperty("setup_code") && obj.hasOwnProperty("ssid"))
+    {
+        snapshotStructure = collection
+            .where('setup_code', '==', obj.setup_code)
+            .where('ssid', '==', obj.ssid);
+    }
+
+    const snapshot = await snapshotStructure.get();
+
+    if (snapshot.docs.length == 1)
+    {
+        return snapshot.docs[0];
+    }
+}
+
+export async function setProvisioningBindicator(ssid, setup_code)
+{
+    return new Promise(async (resolve, reject) =>
+    {
+        try
+        {
+            const monitoring_uuid = uuid();
+            db.collection('bindicators').doc(id).set({
+                ssid,
+                monitoring_uuid,
+                setup_code,
+                provisioning_status: true
+            });
+            resolve({ monitoring_uuid });
+            return { monitoring_uuid };  // Returning a uuid to monitor for an updated photonID
+        } catch (error)
+        {
+            console.error("Error adding document:", error);
+            reject(id);
+        }
+    });
+}
+
+export async function findProvisioningBindicator(ssid, setupCode)
+{
+    const querySnapshot = await db.collection('bindicators')
+        .where('provisioning_status', '==', true)
+        .where('ssid', '==', ssid)
+        .where('setup_code', '==', setupCode.toUpperCase())
+        .get();
+
+    const doc = querySnapshot.docs[0];
+    return doc.data();
+}
+
 export async function getButtonState(photonId, category)
 {
     return await new Promise(async (resolve, reject) =>
@@ -325,48 +391,30 @@ export async function checkSchedule(bindicator)
 
 export async function whoAmI(data) 
 {
-    let docGroup;
+    //get data from photon
+    const DELIMITER = ":: ::";
+    console.log(data);
+    const verificationKey = data.data;
+    const photon_id = data.coreid;
 
-    if (!bindicator)
+    const [ssid, setupCode] = atob(verificationKey).split(DELIMITER)
+        .map(x => atob(x));
+
+
+    const fbData = await getBindicatorData(photonId);
+    if (!fbData.hasOwnProperty("error"))
     {
-        docGroup = await db.collection('bindicators').get();
+        //photon is in DB
+
+        return { photon_id };
     }
-    else
-    {
-        docGroup = await db.collection('bindicators').where('__name__', '==', bindicator).get();
-    }
+
+    //photon is not in DB, find provisioning photon by setupcode and wifi
 
 
-    const holdenDB = await holden.display();
 
-    return new Promise(async (resolve, reject) =>
-    {
-        if (!docGroup.empty)
-        {
-            // Start a batch  
-            const batch = db.batch();
 
-            docGroup.forEach((doc) =>
-            {
-                const data = doc.data();
-                if (data.household_id == "bakkala_holden")
-                {
-                    batch.update(doc.ref, { trash_days: holdenDB.trash_days, recycle_days: holdenDB.recycling_days });
-                }
-                else
-                {
-                    const trashDays = calendar.getDays(data.trash_schedule, data.trash_scheme);
-                    const recycleDays = calendar.getDays(data.recycle_schedule, data.recycle_scheme);
-
-                    batch.update(doc.ref, { trash_days: trashDays.days, recycle_days: recycleDays.days });
-                }
-            });
-
-            // Commit the batch  
-            await batch.commit().then(() => { resolve(); });
-        }
-
-    });
+    return { dfe: "fef" };
 }
 
 

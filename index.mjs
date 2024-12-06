@@ -141,16 +141,28 @@ server({ security: { csrf: false } }, [
         }
     ),
 
+    post('/hooks/post-provision', ctx => jsonHeader,
+        async function (ctx)
+        {
+            return await checkAuth(ctx,
+                async function (ctx)
+                {
+                    return await fb.setProvisioningBindicator(ctx.data.ssid, ctx.data.setup_code);
+                    //TODO send this from app
+                });
+        }
+    ),
+
     post('/hooks/whoami', ctx => jsonHeader,
         async function (ctx)
         {
             return await checkAuth(ctx,
                 async function (ctx)
                 {
-                    return await fb.whoAmI(ctx.data.photon_id);
+                    return await fb.whoAmI(ctx.data);
                 });
         }
-    ), 
+    ),
 
 
     // /hooks/settings/set-schedule/:category
