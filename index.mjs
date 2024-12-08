@@ -148,7 +148,6 @@ server({ security: { csrf: false } }, [
                 async function (ctx)
                 {
                     return await fb.addProvisioningBindicator(ctx.data.verification_key, ctx.data.device_uuid);
-                    //TODO send this from app
                 });
         }
     ),
@@ -186,10 +185,11 @@ server({ security: { csrf: false } }, [
 
 async function checkAuth(ctx, callback)
 {
-    const authHeader = ctx.headers.authorization;
+    const authHeader = ctx.headers.authorization || ctx.headers.Authorization;
 
     if (!authHeader || !authHeader.startsWith('Basic '))
     {
+        console.error("Security check failed. No auth credentials.");
         return { success: false, reason: "Security check failed. No auth credentials." };
     }
 
@@ -198,19 +198,20 @@ async function checkAuth(ctx, callback)
 
     const [username, password] = creds.split(':');
 
-    // Perform your authentication logic here
+    //   authentication logic  
     if (username === process.env.BASIC_AUTH_USER && password === process.env.BASIC_AUTH_PASSWORD)
     {
         const data = await callback(ctx);
         if (data && data.error)
         {
+            console.error("Error with data:", { ...data });
             return { success: false, error: data.error, result: { ...data } };
 
         }
         return { success: true, result: { ...data } };
-
     }
 
+    console.error("Security check failed. Invalid credentials.");
     return { success: false, reason: "Security check failed. Invalid credentials." };
 
 };

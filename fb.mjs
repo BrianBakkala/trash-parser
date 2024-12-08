@@ -6,6 +6,7 @@ import * as papi from './particle_api.mjs';
 import * as crypto from 'crypto';
 
 import { createRequire } from 'module';
+import { DocumentReference } from 'firebase-admin/firestore';
 const require = createRequire(import.meta.url);
 const serviceAccount = require('./config/firebaseServiceAccountKey.json');
 const VERIFICATION_KEY_DELIMITER = ":: ::";
@@ -36,44 +37,47 @@ async function intializeFirebase()
  * @param {Object} obj
  * @return {DocumentReference} 
  */
-export async function getBindicatorDocument(obj)
+export async function getBindicatorDocument(obj, forceNewDoc = false)
 {
     const collection = db.collection('bindicators');
-    let snapshotStructure;
 
-    for (const key of IDENTIFICATION_KEYS)
+    const key = IDENTIFICATION_KEYS.find(k => obj.hasOwnProperty(k));
+    if (!key)
     {
-        if (obj.hasOwnProperty(key))
-        {
-            snapshotStructure = collection.where(key, '==', obj[key]);
-            break;
-        }
+        throw new Error('No valid identification key found in the object.');
     }
 
-    const snapshot = await snapshotStructure.get();
+    const snapshot = await collection.where(key, '==', obj[key]).get();
 
-    if (snapshot.docs.length == 1)
+    if (snapshot.docs.length === 1)
     {
-        return snapshot.docs[0];
+        return snapshot.docs[0].ref; // Return the DocumentReference directly
     }
 
-    throw new Error('No matching document found.');
+    if (forceNewDoc)
+    {
+        return db.collection('bindicators').doc();
+    }
+
+    throw new Error('No matching document found or multiple matches.');
 }
 
-export async function addProvisioningBindicator(verificationKey, household_id)
+
+export async function addProvisioningBindicator(verification_key, household_id)
 {
     return new Promise(async (resolve, reject) =>
     {
         try
         {
-            const { ssid, setup_code } = parseVerificationKey(verificationKey);
+            // const { ssid, setup_code } = parseVerificationKey(verification_key);
             const monitoring_uuid = uuid();
 
-            db.collection('bindicators').doc(verificationKey).set({
-                ssid,
+            const docRef = await getBindicatorDocument({ verification_key }, true);
+
+            docRef.set({
                 household_id,
                 monitoring_uuid,
-                setup_code,
+                verification_key,
                 provisioning_status: true
             });
 
@@ -83,28 +87,24 @@ export async function addProvisioningBindicator(verificationKey, household_id)
         } catch (error)
         {
             console.error("Error adding document:", error);
-            reject(id);
+            reject();
         }
     });
 }
-
-export async function createBindicator(oldDoc, photon_id)
+/**
+ * Sets up a provisioning Bindicator with the correct new properties.
+ *
+ * @export
+ * @param {DocumentReference} docReference
+ * @param {String} photon_id
+ */
+export async function createBindicator(docReference, photon_id)
 {
     try
     {
-        if (!oldDocSnapshot.exists)
-        {
-            console.log('Old document does not exist!');
-            return;
-        }
-
-        const oldData = oldDocSnapshot.data();
-
-        // Create a new document with a new ID and copy the data
-        const newDocRef = db.collection('bindicators').doc(photon_id);
-        await newDocRef.set(
+        await docReference.update(
             {
-                ...oldData, //copy old data
+                provisioning_status: false,
 
                 photon_id,
                 household_name: "",
@@ -121,24 +121,21 @@ export async function createBindicator(oldDoc, photon_id)
                 recycle_scheme: "biweekly first"
             }
         );
-        console.log('New document created with ID:', photon_id);
 
-        // Delete the old document
-        await oldDoc.delete();
-        console.log('Old document deleted');
+        console.log("#", "Bindicator created.");
+
 
     } catch (error)
     {
         console.error('Error transferring document data:', error);
     }
 
-
-
-
 }
 
 export async function onboardBindicator(docReference, photonId)
 {
+    console.log("#", "Onboarding Bindicator...");
+
     return new Promise((resolve, reject) =>
     {
         createBindicator(docReference, photonId)
@@ -177,11 +174,13 @@ export async function getBindicators(householdId)
 
 
 ///BUTTON STATES
-export async function getBindicatorData(photonId)
+export async function getBindicatorData(identificationKeyObj)
 {
+    const docRef = await getBindicatorDocument(identificationKeyObj);
+
     return await new Promise(async (resolve, reject) =>
     {
-        return await db.collection('bindicators').doc(photonId).get()
+        return await docRef.get()
             .then(
                 (doc) =>
                 {
@@ -210,11 +209,13 @@ export async function getBindicatorData(photonId)
 
 
 
-export async function getButtonState(photonId, category)
+export async function getButtonState(identificationKeyObj, category)
 {
+    const docRef = await getBindicatorDocument(identificationKeyObj);
+
     return await new Promise(async (resolve, reject) =>
     {
-        return await db.collection('bindicators').doc(photonId).get()
+        return await docRef.get()
             .then(
                 (doc) =>
                 {
@@ -227,21 +228,23 @@ export async function getButtonState(photonId, category)
     });
 }
 
-export async function setButtonState(photonId, category, value = null)
+export async function setButtonState(identificationKeyObj, category, value = null)
 {
+    const docRef = await getBindicatorDocument(identificationKeyObj);
+
     return new Promise((resolve, reject) =>
     {
-        this.getButtonState(photonId, category).then((state) =>
+        this.getButtonState(identificationKeyObj, category).then((state) =>
         {
             if (value == null)
             {
                 value = !state.state;
             }
 
-            db.collection('bindicators').doc(photonId).update({ [category + '_on']: value })
+            docRef.update({ [category + '_on']: value })
                 .then(() =>
                 {
-                    papi.publishParticleEvent("button_state_changed", { photon_id: photonId, category, value });
+                    papi.publishParticleEvent("button_state_changed", { ...identificationKeyObj, category, value });
                     resolve();
                 });
 
@@ -306,19 +309,18 @@ async function setButtonStatesForAllBindicators(category, value = null)
 
 
 ///SCHEDULE
-export async function generateTrashRecycleDays(bindicator) 
+export async function generateTrashRecycleDays(bindicatorPhotonId) 
 {
     let docGroup;
 
-    if (!bindicator)
+    if (!bindicatorPhotonId)
     {
         docGroup = await db.collection('bindicators').get();
     }
     else
     {
-        docGroup = await db.collection('bindicators').where('__name__', '==', bindicator).get();
+        docGroup = await db.collection('bindicators').where('photon_id', '==', bindicatorPhotonId).get();
     }
-
 
     const holdenDB = await holden.display();
 
@@ -346,13 +348,14 @@ export async function generateTrashRecycleDays(bindicator)
             });
 
             // Commit the batch  
+            console.log("#", "Trash and recycle days generated.");
             await batch.commit().then(() => { resolve(); });
         }
 
     });
 }
 
-export async function checkSchedule(bindicator)
+export async function checkSchedule(bindicatorPhotonId)
 {
     const d = new Date();
     const tomorrow = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1);
@@ -362,13 +365,13 @@ export async function checkSchedule(bindicator)
 
     let docGroup;
 
-    if (!bindicator)
+    if (!bindicatorPhotonId)
     {
         docGroup = await db.collection('bindicators').get();
     }
     else
     {
-        docGroup = await db.collection('bindicators').where('__name__', '==', bindicator).get();
+        docGroup = await db.collection('bindicators').where('photon_id', '==', bindicatorPhotonId).get();
     }
 
     let result = [];
@@ -410,6 +413,8 @@ export async function checkSchedule(bindicator)
         });
 
         await batch.commit().then(() => { resolve({ result }); });
+
+        console.log("#", "Schedule checked.");
         return { result };
     });
 }
@@ -417,32 +422,31 @@ export async function checkSchedule(bindicator)
 
 ///AUTH
 
-export async function whoAmI(data) 
+export async function whoAmI(photonData) 
 {
     //get data from photon
-    console.log(data);
-    const verification_key = data.data;
-    const photon_id = data.coreid;
+    const verification_key = photonData.data;
+    const photon_id = photonData.coreid;
 
-    const fbData = await getBindicatorData(photonId);
-    if (!fbData.hasOwnProperty("error"))
+
+
+    try
     {
-        //photon is in DB
+        const fbData = await getBindicatorData({ photon_id });
+        return fbData;
 
-        return { photon_id };
+    } catch (error)
+    {
+        //proper photon with photon_id is not in DB, find provisioning photon instead
     }
 
-    //photon is not in DB, find provisioning photon by setupcode and wifi
-
     const correctDoc = await getBindicatorDocument({ verification_key });
-    const data = correctDoc.data();
-    onboardBindicator(docReference, photon_id);
+
+    onboardBindicator(correctDoc, photon_id);
+    return { photon_id };
 
 
-
-    return { dfe: "fef" };
 }
-
 
 
 ///UTIL

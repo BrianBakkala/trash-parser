@@ -34,13 +34,13 @@ export async function publishParticleEvent(eventName, eventData)
             {
                 if (data.body.ok)
                 {
-                    console.log("Event published succesfully");
+                    console.log("#","Event published succesfully");
                     return { success: true };
                 }
             },
             function (err)
             {
-                console.log("Failed to publish event: " + err);
+                console.log("#","Failed to publish event: " + err);
             }
         );
 

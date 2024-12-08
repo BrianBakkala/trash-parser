@@ -34,7 +34,6 @@ export async function display(dowLetter = null)
                 }
 
                 const returnable = table[desiredY].join(" ").match(streetNameRegex)[streetNameRegexGroup];
-                // console.log(returnable);
 
                 return returnable;
 

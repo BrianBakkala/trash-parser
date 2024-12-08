@@ -429,4 +429,4 @@ function getFirstNumber(numString)
 
 }
 
-// console.log(getTrashRecyclingDays(static_lines, 3, 2024)); 
+// console.lg(getTrashRecyclingDays(static_lines, 3, 2024)); 

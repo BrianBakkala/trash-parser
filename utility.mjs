@@ -38,7 +38,7 @@ export function writeJSONToFile(obj, filename = 'sample.json')
     fs.writeFileSync(filename, jsonString, 'utf8');
 
 
-    console.log('Data has been written to ' + filename);
+    console.log("#", 'Data has been written to ' + filename);
 
 };
 
