@@ -106,6 +106,8 @@ export async function createBindicator(docReference, photon_id)
             {
                 provisioning_status: false,
 
+                device_name: "My BBBBB",
+
                 photon_id,
                 household_name: "",
 
@@ -170,6 +172,90 @@ export async function getBindicators(householdId)
     }
 }
 
+export async function getBindicatorSettings(identificationKeyObj)
+{
+    const docRef = await getBindicatorDocument(identificationKeyObj);
+
+    return await new Promise(async (resolve, reject) =>
+    {
+        return await docRef.get()
+            .then(
+                (doc) =>
+                {
+                    const data = doc.data();
+                    let result;
+                    if (!data)
+                    {
+                        result = { error: "Bindicator not found." };
+                    }
+                    else
+                    {
+                        result = data;
+                    }
+                    resolve(result);
+                    return result;
+                }
+            );
+    });
+}
+
+export async function getPreviewDays(settingsData, numResults = 5)
+{
+
+
+    function getBiweeklyScheme(weekInput)
+    {
+
+        function getWeekNumber(date)
+        {
+            const startOfYear = new Date(date.getFullYear(), 0, 1);
+            const daysSinceStartOfYear = Math.floor((date - startOfYear) / (1000 * 60 * 60 * 24));
+            const weekNumber = Math.ceil((daysSinceStartOfYear + startOfYear.getDay() + 1) / 7);
+            return weekNumber;
+        }
+
+        // get current and next week numbers
+        const currentWeek = getWeekNumber(new Date());
+        const nextWeek = currentWeek + 1;
+
+        if (
+            (weekInput === 'this' && currentWeek % 2 == 0) ||
+            (weekInput === 'next' && nextWeek % 2 == 0)
+        )
+        {
+            return 'first';
+        }
+
+        return 'second';
+    }
+
+    return await new Promise(async (resolve, reject) =>
+    {
+        let result;
+        result = { 3: 2 };
+
+
+        let trash_scheme = settingsData.trash_scheme;
+        if (trash_scheme.startsWith("biweekly"))
+        {
+            const input = settingsData.trash_start_option;
+            let schemeWeek = getBiweeklyScheme(input);
+            trash_scheme = "biweekly " + schemeWeek;
+        }
+
+        // console.log(trash_scheme);
+
+        const trash_days = calendar.getDays(settingsData.trash_day, trash_scheme)
+            .days.slice(0, numResults)
+            .map(x => calendar.naturalDate(x, true));
+
+
+        result = { trash_days };
+
+        resolve(result);
+        return result;
+    });
+}
 
 
 
@@ -428,8 +514,6 @@ export async function whoAmI(photonData)
     const verification_key = photonData.data;
     const photon_id = photonData.coreid;
 
-
-
     try
     {
         const fbData = await getBindicatorData({ photon_id });
@@ -458,7 +542,7 @@ function uuid()
 
 function createVerificationKey(ssid, setupCode)
 {
-    return btoa(btoa(ssid) + VERIFICATION_KEY_DELIMITER + btoa(setupCode));
+    return btoa(btoa(setupCode.toLowerCase()) + VERIFICATION_KEY_DELIMITER + btoa(ssid));
 }
 
 function parseVerificationKey(verificationKey)

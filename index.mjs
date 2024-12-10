@@ -63,6 +63,33 @@ server({ security: { csrf: false } }, [
     ),
 
 
+    post('/hooks/get-bindicator-settings', ctx => jsonHeader,
+        async function (ctx)
+        {
+            // console.log("#", "Received:", ctx.data);
+
+            return await checkAuth(ctx,
+                async function (ctx)
+                {
+                    return await fb.getBindicatorSettings(ctx.data);
+                });
+        }
+    ),
+
+
+    post('/hooks/get-preview-days', ctx => jsonHeader,
+        async function (ctx)
+        {
+
+            return await checkAuth(ctx,
+                async function (ctx)
+                {
+                    return await fb.getPreviewDays(ctx.data, 3);
+                });
+        }
+    ),
+
+
 
     post('/hooks/get-bindicators-for-household', ctx => jsonHeader,
         async function (ctx)

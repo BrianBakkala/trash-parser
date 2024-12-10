@@ -1,9 +1,6 @@
-
 const DOW_MAP = { Su: 0, M: 1, T: 2, W: 3, Th: 4, F: 5, Sa: 6 }; ///0-based from JS Date.getDay()
 
-
-
-export function getDays(dayOfWeek, scheme, holidays = null, year = 2024)
+export function getDays(dayOfWeek, scheme, holidays = null, year = 2024, full = false)
 {
     if (DOW_MAP.hasOwnProperty(dayOfWeek))
     {
@@ -26,6 +23,11 @@ export function getDays(dayOfWeek, scheme, holidays = null, year = 2024)
     {
         const bigOffset = 1 + firstDOWOffset + i;
         const dowDate = new Date(year, 0, bigOffset);
+
+        if (!full && dowDate < new Date().setHours(0, 0, 0, 0))
+        {
+            continue;
+        }
 
         let dateToPush = dowDate;
 
@@ -56,6 +58,21 @@ export function getDays(dayOfWeek, scheme, holidays = null, year = 2024)
     };
 
     return trashObject;
+}
+
+export function naturalDate(datestamp, abbrev = false)
+{
+    const monthNames = [
+        "January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December"
+    ];
+
+    //parse input
+    const [year, monthNum, day] = datestamp.split("-");
+
+    let m = monthNames[monthNum - 1];
+
+    return (abbrev ? m.slice(0, 3) : m) + " " + day;
 }
 
 
