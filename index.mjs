@@ -84,7 +84,7 @@ server({ security: { csrf: false } }, [
             return await checkAuth(ctx,
                 async function (ctx)
                 {
-                    return await fb.getPreviewDays(ctx.data, 3);
+                    return await fb.getPreviewDays(ctx.data, 5);
                 });
         }
     ),

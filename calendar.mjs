@@ -11,7 +11,8 @@ export function getDays(dayOfWeek, scheme, holidays = null, year = 2024, full = 
     {
         holidays = getHolidays(year);
     }
-    let recyclingDays = [];
+    
+    let collectionDays = [];
 
     const d = new Date(year, 0, 1);
     const jan1DOW = d.getDay();
@@ -19,7 +20,7 @@ export function getDays(dayOfWeek, scheme, holidays = null, year = 2024, full = 
 
     let isRecyclingWeek = scheme == "biweekly second" ? false : true;
 
-    for (let i = 0; 1 + firstDOWOffset + i < 367; i += 7)
+    for (let i = 0; 1 + firstDOWOffset + i < 367 * 2; i += 7)
     {
         const bigOffset = 1 + firstDOWOffset + i;
         const dowDate = new Date(year, 0, bigOffset);
@@ -43,7 +44,7 @@ export function getDays(dayOfWeek, scheme, holidays = null, year = 2024, full = 
 
         if (isRecyclingWeek)
         {
-            recyclingDays.push(dateToPush);
+            collectionDays.push(dateToPush);
         }
 
         if (scheme.split(" ")[0] == "biweekly")
@@ -52,12 +53,12 @@ export function getDays(dayOfWeek, scheme, holidays = null, year = 2024, full = 
         }
     }
 
-    const trashObject = {
+    const resultObj = {
         holidays: holidays,
-        days: recyclingDays.map(x => x.toLocaleDateString('en-CA'))
+        days: collectionDays.map(x => x.toLocaleDateString('en-CA'))
     };
 
-    return trashObject;
+    return resultObj;
 }
 
 export function naturalDate(datestamp, abbrev = false)
@@ -72,7 +73,7 @@ export function naturalDate(datestamp, abbrev = false)
 
     let m = monthNames[monthNum - 1];
 
-    return (abbrev ? m.slice(0, 3) : m) + " " + day;
+    return (abbrev ? m.slice(0, 3) : m) + " " + +day;
 }
 
 

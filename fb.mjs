@@ -201,8 +201,6 @@ export async function getBindicatorSettings(identificationKeyObj)
 
 export async function getPreviewDays(settingsData, numResults = 5)
 {
-
-
     function getBiweeklyScheme(weekInput)
     {
 
@@ -232,25 +230,31 @@ export async function getPreviewDays(settingsData, numResults = 5)
     return await new Promise(async (resolve, reject) =>
     {
         let result;
-        result = { 3: 2 };
 
-
-        let trash_scheme = settingsData.trash_scheme;
-        if (trash_scheme.startsWith("biweekly"))
+        const getFormattedDays = (dayType, scheme, numResults) =>
         {
-            const input = settingsData.trash_start_option;
-            let schemeWeek = getBiweeklyScheme(input);
-            trash_scheme = "biweekly " + schemeWeek;
-        }
+            return calendar.getDays(dayType, scheme)
+                .days.slice(0, numResults)
+                .map(x => calendar.naturalDate(x, true));
+        };
 
-        // console.log(trash_scheme);
+        const adjustBiweeklyScheme = (scheme, startOption) =>
+        {
+            if (scheme.startsWith("biweekly"))
+            {
+                const schemeWeek = getBiweeklyScheme(startOption);
+                return 'biweekly ' + schemeWeek;
+            }
+            return scheme;
+        };
 
-        const trash_days = calendar.getDays(settingsData.trash_day, trash_scheme)
-            .days.slice(0, numResults)
-            .map(x => calendar.naturalDate(x, true));
+        let trash_scheme = adjustBiweeklyScheme(settingsData.trash_scheme, settingsData.trash_start_option);
+        let recycle_scheme = adjustBiweeklyScheme(settingsData.recycle_scheme, settingsData.trash_start_option);
 
+        const trash_days = getFormattedDays(settingsData.trash_day, trash_scheme, numResults);
+        const recycle_days = getFormattedDays(settingsData.recycle_day, recycle_scheme, numResults);
 
-        result = { trash_days };
+        result = { trash_days, recycle_days };
 
         resolve(result);
         return result;
