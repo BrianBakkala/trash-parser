@@ -100,6 +100,17 @@ server({ security: { csrf: false } }, [
                 });
         }
     ),
+    post('/hooks/save-holiday-data', ctx => jsonHeader,
+        async function (ctx)
+        {
+
+            return await checkAuth(ctx,
+                async function (ctx)
+                {
+                    return await fb.saveHolidayData(ctx.data.device_uuid, ctx.data.selected_holidays);
+                });
+        }
+    ),
 
 
 

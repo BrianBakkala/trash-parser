@@ -294,7 +294,6 @@ export async function getHolidayData(householdId)
             return { success: false, error: "Error getting document." };
         }
 
-
         result = calendar.getHolidaysDatabase();
 
         if (currentHolidays.length > 0)
@@ -310,7 +309,7 @@ export async function getHolidayData(householdId)
 
         }
 
-        resolve(result);
+        resolve({ holidays: [...Object.values(result)] });
         return result;
     });
 }
@@ -323,6 +322,28 @@ async function getHolidaysSimple(householdId)
         .filter(x => x.is_selected)
         .map(x => x.datestamps)
         .flat(1);
+}
+
+
+
+export async function saveHolidayData(householdId, holidayNames)
+{
+    const newDatestamps = Object.values(calendar.getHolidaysDatabase())
+        .filter(x => holidayNames.includes(x.name))
+        .map(x => x.datestamps)
+        .flat(1);
+
+
+    const docGroup = await db.collection('bindicators').where('household_id', '==', householdId).get();
+    const batch = db.batch();
+
+    docGroup.forEach((doc) =>
+    {
+        batch.update(doc.ref, { holidays: newDatestamps });
+    });
+
+    console.log("#", "Holidays saved.");
+    batch.commit();
 }
 
 
@@ -496,9 +517,10 @@ export async function generateTrashRecycleDays(bindicatorPhotonId)
                 }
                 else
                 {
-                    const trashDays = calendar.getDays(data.trash_schedule, data.trash_scheme);
-                    const recycleDays = calendar.getDays(data.recycle_schedule, data.recycle_scheme);
+                    const trashDays = calendar.getDays(data.trash_schedule, data.trash_scheme, data.holidays);
+                    const recycleDays = calendar.getDays(data.recycle_schedule, data.recycle_scheme, data.holidays);
 
+                    batch.update(doc.ref, { holidays: getHolidaysSimple(data.household_id) });
                     batch.update(doc.ref, { trash_days: trashDays.days, recycle_days: recycleDays.days });
                 }
             });

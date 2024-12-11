@@ -3,11 +3,16 @@ const monthNames = [
     "January", "February", "March", "April", "May", "June",
     "July", "August", "September", "October", "November", "December"
 ];
-export function getDays(dayOfWeek, scheme, holidays = null, year = 2024, full = false)
+export function getDays(dayOfWeek, scheme, holidays = null, year = null, full = false)
 {
     if (DOW_MAP.hasOwnProperty(dayOfWeek))
     {
         dayOfWeek = DOW_MAP[dayOfWeek];
+    }
+
+    if (year == null)
+    {
+        year = new Date.getFullYear();
     }
 
     if (holidays == null)
