@@ -12,7 +12,7 @@ export function getDays(dayOfWeek, scheme, holidays = null, year = null, full = 
 
     if (year == null)
     {
-        year = new Date.getFullYear();
+        year = new Date().getFullYear();
     }
 
     if (holidays == null)
