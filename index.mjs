@@ -3,7 +3,7 @@
 
 import * as papi from './particle_api.mjs';
 import * as fb from './fb.mjs';
-import * as holden from './holden.mjs';
+import * as hometown from './hometown.mjs';
 import * as util from './utility.mjs';
 
 import server from 'server';
@@ -18,13 +18,13 @@ server({ security: { csrf: false } }, [
     get('/', ctx => jsonHeader, ctx => process.env.ENV_TEST),
     get('/favicon.ico', ctx => jsonHeader, ctx => 'Hello'),
 
-    // get('/holden', ctx => jsonHeader, async ctx => await holden.display()),
-    // get('/holden/simple', ctx => jsonHeader, async ctx => await holden.display_simple()),
-    // get('/holden/full/:dow', ctx => jsonHeader, async ctx => await holden.display(ctx.params.dow)),
-    // get('/holden/simple/:dow', ctx => jsonHeader, async ctx => await holden.display_simple(ctx.params.dow)),
+    // get('/hometown', ctx => jsonHeader, async ctx => await hometown.display()),
+    // get('/hometown/simple', ctx => jsonHeader, async ctx => await hometown.display_simple()),
+    // get('/hometown/full/:dow', ctx => jsonHeader, async ctx => await hometown.display(ctx.params.dow)),
+    // get('/hometown/simple/:dow', ctx => jsonHeader, async ctx => await hometown.display_simple(ctx.params.dow)),
     get('/test', ctx => jsonHeader, async ctx => { return { success: true, message: "hello there" }; }),
-    // get('/test/random', ctx => jsonHeader, async ctx => await holden.display_test(Math.random() < 0.5, Math.random() < 0.5)),
-    // get('/test/:trash/:recycling', ctx => jsonHeader, async ctx => await holden.display_test(ctx.params.trash, ctx.params.recycling)),
+    // get('/test/random', ctx => jsonHeader, async ctx => await hometown.display_test(Math.random() < 0.5, Math.random() < 0.5)),
+    // get('/test/:trash/:recycling', ctx => jsonHeader, async ctx => await hometown.display_test(ctx.params.trash, ctx.params.recycling)),
 
 
     post('/hooks/set-button-state', ctx => jsonHeader,
@@ -216,7 +216,7 @@ server({ security: { csrf: false } }, [
     // get('/fb/test', ctx => jsonHeader, async ctx => await fb.test()),
     // get('/fb/gbs', ctx => jsonHeader, async ctx => await fb.getButtonState('123456', 'trash')),
     // get('/fb/sbs', ctx => jsonHeader, async ctx => await fb.setButtonState('123456', 'trash')),
-    // get('/fb/shbs', ctx => jsonHeader, async ctx => await fb.setHouseholdButtonStates('bakkala_holden', 'trash')),
+    // get('/fb/shbs', ctx => jsonHeader, async ctx => await fb.setHouseholdButtonStates('bakkala_hometown', 'trash')),
 
 
 

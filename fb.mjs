@@ -1,6 +1,6 @@
 import admin from 'firebase-admin';
 import * as calendar from './calendar.mjs';
-import * as holden from './holden.mjs';
+import * as hometown from './hometown.mjs';
 import * as util from './utility.mjs';
 import * as papi from './particle_api.mjs';
 import * as crypto from 'crypto';
@@ -231,9 +231,11 @@ export async function getPreviewDays(settingsData, numResults = 5)
     {
         let result;
 
+        const holidays = await getHolidaysSimple(settingsData.device_uuid);
+
         const getFormattedDays = (dayType, scheme, numResults) =>
         {
-            return calendar.getDays(dayType, scheme)
+            return calendar.getDays(dayType, scheme, holidays)
                 .days.slice(0, numResults)
                 .map(x => calendar.naturalDate(x, true));
         };
@@ -264,7 +266,7 @@ export async function getPreviewDays(settingsData, numResults = 5)
 
 export async function getHolidayData(householdId)
 {
-    return await new Promise(async (resolve, reject) =>
+    return new Promise(async (resolve, reject) =>
     {
         let result;
         let currentHolidays = [];
@@ -312,6 +314,18 @@ export async function getHolidayData(householdId)
         return result;
     });
 }
+
+async function getHolidaysSimple(householdId)
+{
+    const data = await getHolidayData(householdId);
+
+    return Object.values(data)
+        .filter(x => x.is_selected)
+        .map(x => x.datestamps)
+        .flat(1);
+}
+
+
 
 
 
@@ -464,7 +478,7 @@ export async function generateTrashRecycleDays(bindicatorPhotonId)
         docGroup = await db.collection('bindicators').where('photon_id', '==', bindicatorPhotonId).get();
     }
 
-    const holdenDB = await holden.display();
+    const hometownDB = await hometown.display();
 
     return new Promise(async (resolve, reject) =>
     {
@@ -476,9 +490,9 @@ export async function generateTrashRecycleDays(bindicatorPhotonId)
             docGroup.forEach((doc) =>
             {
                 const data = doc.data();
-                if (data.household_id == "bakkala_holden")
+                if (data.household_id == "bakkala_hometown")
                 {
-                    batch.update(doc.ref, { trash_days: holdenDB.trash_days, recycle_days: holdenDB.recycling_days });
+                    batch.update(doc.ref, { trash_days: hometownDB.trash_days, recycle_days: hometownDB.recycling_days });
                 }
                 else
                 {
@@ -621,7 +635,7 @@ export function test()
     // const hh = "bakkala_northborough";
     // onboardBindicator(hh, "222");
 
-    return parseHolden();
+    return parsehometown();
 }
 
 

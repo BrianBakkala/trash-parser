@@ -38,7 +38,8 @@ export function getDays(dayOfWeek, scheme, holidays = null, year = 2024, full = 
         for (let dOffset = 0; dOffset < dowDate.getDay(); dOffset += 1)
         {
             const date = new Date(year, 0, bigOffset - dOffset);
-            if (holidays.map(x => x.toDateString()).includes(date.toDateString()))
+
+            if (holidays.map(x => new Date(x).toDateString()).includes(date.toDateString()))
             {
                 dateToPush = new Date(year, 0, bigOffset + 1);
                 break;
@@ -89,9 +90,9 @@ function getSampleHolidays(year = 2024)
 
 export function getHolidaysDatabase(year = 2024)
 {
+    let db = {};
     try
     {
-        let db = {};
         [
             getHolidayEntry(year, "New Years' Day", (year) => "January 1, " + year),
             getHolidayEntry(year, "Martin Luther King Jr. Day", martinLutherKingJrDay),
