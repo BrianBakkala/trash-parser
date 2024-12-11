@@ -89,6 +89,18 @@ server({ security: { csrf: false } }, [
         }
     ),
 
+    post('/hooks/get-holiday-data', ctx => jsonHeader,
+        async function (ctx)
+        {
+
+            return await checkAuth(ctx,
+                async function (ctx)
+                {
+                    return await fb.getHolidayData(ctx.data.device_uuid);
+                });
+        }
+    ),
+
 
 
     post('/hooks/get-bindicators-for-household', ctx => jsonHeader,

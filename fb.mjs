@@ -262,6 +262,58 @@ export async function getPreviewDays(settingsData, numResults = 5)
 }
 
 
+export async function getHolidayData(householdId)
+{
+    return await new Promise(async (resolve, reject) =>
+    {
+        let result;
+        let currentHolidays = [];
+
+        try
+        {
+            const bindicators = await db.collection('bindicators')
+                .where('household_id', '==', householdId).get();
+
+            const sampleData = bindicators.docs[0].data();
+
+            if (!sampleData.holidays)
+            {
+                currentHolidays = [];
+            }
+            else
+            {
+                currentHolidays = sampleData.holidays;
+            }
+
+        } catch (error)
+        {
+
+            reject({ success: false, error: "Error getting document." });
+            return { success: false, error: "Error getting document." };
+        }
+
+
+        result = calendar.getHolidaysDatabase();
+
+        if (currentHolidays.length > 0)
+        {
+            for (let holidayName of Object.keys(result))
+            {
+                const entry = result[holidayName];
+                if (haveCommonElement(entry.datestamps, currentHolidays))
+                {
+                    result[holidayName].is_selected = true;
+                }
+            }
+
+        }
+
+        resolve(result);
+        return result;
+    });
+}
+
+
 
 ///BUTTON STATES
 export async function getBindicatorData(identificationKeyObj)
@@ -557,6 +609,11 @@ function parseVerificationKey(verificationKey)
     return { ssid, setup_code };
 }
 
+function haveCommonElement(array1, array2)
+{
+    const set1 = new Set(array1);
+    return array2.some(element => set1.has(element));
+}
 
 
 export function test()
