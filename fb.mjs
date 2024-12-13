@@ -230,8 +230,9 @@ export async function saveSettings(settingsData, numResults = 5)
     return await new Promise(async (resolve, reject) =>
     {
         let result;
+        const householdId = settingsData.device_uuid;
 
-        const holidays = await getHolidaysSimple(settingsData.device_uuid);
+        const holidays = await getHolidaysSimple(householdId);
 
         const getFormattedDays = (daysArray, numResults) =>
         {
@@ -255,21 +256,31 @@ export async function saveSettings(settingsData, numResults = 5)
         const trashDaysRaw = calendar.getDays(settingsData.trash_day, trash_scheme, holidays).days;
         const recycleDaysRaw = calendar.getDays(settingsData.recycle_day, recycle_scheme, holidays).days;
 
-
-        console.log(holidays);
-
         //save settings
-
         const batch = db.batch();
 
-        const docGroup = await db.collection('bindicators').where('household_id', '==', settingsData.device_uuid).get();
+        const docGroup = await db.collection('bindicators').where('household_id', '==', householdId).get();
         docGroup.forEach((doc) =>
         {
-            batch.update(doc.ref, { recycle_days: recycleDaysRaw });
-            batch.update(doc.ref, { trash_days: trashDaysRaw });
+            batch.update(doc.ref, {
+
+                trash_schedule: settingsData.trash_day,
+                recycle_schedule: settingsData.recycle_day,
+
+                trash_scheme,
+                recycle_scheme,
+
+                recycle_days: recycleDaysRaw,
+                trash_days: trashDaysRaw
+
+            });
         });
 
-        batch.commit();
+        console.log("#", "Settings saved.");
+
+
+        //update button states for household
+        batch.commit().then(() => checkSchedule(householdId, true));
 
         //return preview days for app
         const trash_days = getFormattedDays(trashDaysRaw, numResults);
@@ -551,16 +562,17 @@ export async function generateTrashRecycleDays(bindicatorPhotonId)
 
     });
 }
+
 /**
- * meant to be run at noon
+ * Optimally cronjobbed to run at noon every day
  *
  * @export
  * @param {*} bindicatorPhotonId
  * @return {*} 
  */
-export async function checkSchedule(bindicatorPhotonId)
+export async function checkSchedule(householdId, resetButtonStates = false)
 {
-
+    let result = [];
     const d = new Date();
     const tomorrow = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1);
 
@@ -569,16 +581,14 @@ export async function checkSchedule(bindicatorPhotonId)
 
     let docGroup;
 
-    if (!bindicatorPhotonId)
+    if (!householdId)
     {
         docGroup = await db.collection('bindicators').get();
     }
     else
     {
-        docGroup = await db.collection('bindicators').where('photon_id', '==', bindicatorPhotonId).get();
+        docGroup = await db.collection('bindicators').where('household_id', '==', householdId).get();
     }
-
-    let result = [];
 
     return await new Promise(async (resolve, reject) =>
     {
@@ -588,40 +598,64 @@ export async function checkSchedule(bindicatorPhotonId)
         {
             const data = doc.data();
 
-            if (data.trash_days && data.trash_days.includes(todayDateString))
+            if (lightShouldTurnOn(data.trash_days, todayDateString, tomorrowDateString))
             {
-                //trash was this morning, missed it
-                result.push({ household: data.household_id, category: "trash", value: false, message: "trash was this morning, missed it" });
-                batch.update(doc.ref, { trash_on: false });
-            }
-            if (data.trash_days && data.trash_days.includes(tomorrowDateString))
-            {
-                //trash is tomorrow, light up
-                result.push({ household: data.household_id, category: "trash", value: true, message: "trash is tomorrow, light up" });
+                result.push({ householdId, trash_on: true });
                 batch.update(doc.ref, { trash_on: true });
             }
-
-            if (data.recycle_days && data.recycle_days.includes(todayDateString))
+            if (lightShouldTurnOn(data.recycle_days, todayDateString, tomorrowDateString))
             {
-                //recycle was this morning, missed it
-                result.push({ household: data.household_id, category: "recycle", value: false, message: "recycle was this morning, missed it" });
-                batch.update(doc.ref, { recycle_on: false });
-            }
-            if (data.recycle_days && data.recycle_days.includes(tomorrowDateString))
-            {
-                //recycle is tomorrow, light up
-                result.push({ household: data.household_id, category: "recycle", value: true, message: "recycle is tomorrow, light up" });
+                result.push({ householdId, recycle_on: true });
                 batch.update(doc.ref, { recycle_on: true });
+            }
+
+            if (resetButtonStates || lightShouldTurnOff(data.trash_days, todayDateString, tomorrowDateString))
+            {
+                result.push({ householdId, trash_on: false });
+                batch.update(doc.ref, { trash_on: false });
+            }
+            if (resetButtonStates || lightShouldTurnOff(data.recycle_days, todayDateString, tomorrowDateString))
+            {
+                result.push({ householdId, recycle_on: false });
+                batch.update(doc.ref, { recycle_on: false });
             }
 
         });
 
-        await batch.commit().then(() => { resolve({ result }); });
+        await batch.commit();
 
         console.log("#", "Schedule checked.");
         return { result };
     });
 }
+
+
+
+function lightShouldTurnOn(daysArray, todayDate, tomorrowDate)
+{
+    if (isBefore("11:59"))
+    {
+        return daysArray?.includes(todayDate) || false;
+    }
+    else if (isAfter("16:00"))
+    {
+        return daysArray?.includes(tomorrowDate) || false;
+    }
+
+    return false;
+}
+
+function lightShouldTurnOff(daysArray, todayDate, tomorrowDate)
+{
+    if (isAfter("11:59"))
+    {
+        return daysArray?.includes(todayDate) || false;
+    }
+
+    return false;
+}
+
+
 
 
 ///AUTH
@@ -687,3 +721,38 @@ export function test()
 }
 
 
+function isBefore(time)
+{
+    // Get the current time
+    const now = new Date();
+    const currentHours = now.getHours();
+    const currentMinutes = now.getMinutes();
+
+    // Parse the input time
+    const [inputHours, inputMinutes] = time.split(":").map(Number);
+
+    // Compare current time with the input time
+    if (currentHours < inputHours || (currentHours === inputHours && currentMinutes < inputMinutes))
+    {
+        return true;
+    }
+    return false;
+}
+
+function isAfter(time)
+{
+    // Get the current time
+    const now = new Date();
+    const currentHours = now.getHours();
+    const currentMinutes = now.getMinutes();
+
+    // Parse the input time
+    const [inputHours, inputMinutes] = time.split(":").map(Number);
+
+    // Compare current time with the input time
+    if (currentHours > inputHours || (currentHours === inputHours && currentMinutes > inputMinutes))
+    {
+        return true;
+    }
+    return false;
+}

@@ -158,13 +158,13 @@ server({ security: { csrf: false } }, [
         }
     ),
 
-    post('/hooks/check-schedule/:bindicator', ctx => jsonHeader,
+    post('/hooks/check-schedule/:household', ctx => jsonHeader,
         async function (ctx)
         {
             return await checkAuth(ctx,
                 async function (ctx)
                 {
-                    return await fb.checkSchedule(ctx.params.bindicator);
+                    return await fb.checkSchedule(ctx.params.household);
                 });
         }
     ),
