@@ -62,6 +62,25 @@ export async function getBindicatorDocument(obj, forceNewDoc = false)
     throw new Error('No matching document found or multiple matches.');
 }
 
+export async function getHouseholdDocument(householdId, forceNewDoc = false)
+{
+    const collection = db.collection('households');
+
+    const snapshot = await collection.where('household_id', '==', householdId).get();
+
+    if (snapshot.docs.length === 1)
+    {
+        return snapshot.docs[0].ref; // Return the DocumentReference directly
+    }
+
+    if (forceNewDoc)
+    {
+        return db.collection('households').doc();
+    }
+
+    throw new Error('No matching document found or multiple matches.');
+}
+
 
 export async function addProvisioningBindicator(verification_key, household_id)
 {
@@ -72,14 +91,34 @@ export async function addProvisioningBindicator(verification_key, household_id)
             // const { ssid, setup_code } = parseVerificationKey(verification_key);
             const monitoring_uuid = uuid();
 
-            const docRef = await getBindicatorDocument({ verification_key }, true);
+            const bDocRef = await getBindicatorDocument({ verification_key }, true);
 
-            docRef.set({
+            bDocRef.set({
                 household_id,
                 monitoring_uuid,
                 verification_key,
                 provisioning_status: true
             });
+
+            const hDocRef = await getHouseholdDocument(household_id, true);
+
+            hDocRef.set({
+
+
+                household_id,
+                household_name: "",
+
+
+                holidays: {},
+
+                recycle_schedule: "W",
+                trash_schedule: "W",
+
+                trash_scheme: "weekly",
+                recycle_scheme: "biweekly first"
+
+
+            }, { merge: true }).then(() => generateTrashRecycleDays(hDocRef));
 
             resolve({ monitoring_uuid });
             return { monitoring_uuid };  // Returning a uuid to monitor for an updated photonID
@@ -106,21 +145,13 @@ export async function createBindicator(docReference, photon_id)
             {
                 provisioning_status: false,
 
-                device_name: "My BBBBB",
+                bindicator_name: "My BBBBB",
 
                 photon_id,
-                household_name: "",
 
                 trash_on: false,
                 recycle_on: false,
 
-                holidays: {},
-
-                recycle_schedule: "W",
-                trash_schedule: "W",
-
-                trash_scheme: "weekly",
-                recycle_scheme: "biweekly first"
             }
         );
 
@@ -134,14 +165,14 @@ export async function createBindicator(docReference, photon_id)
 
 }
 
-export async function onboardBindicator(docReference, photonId)
+export async function onboardBindicator(bindicatorDoc, householdDoc, householdId, photonId)
 {
     console.log("#", "Onboarding Bindicator...");
 
     return new Promise((resolve, reject) =>
     {
-        createBindicator(docReference, photonId)
-            .then(() => generateTrashRecycleDays(photonId))
+        createBindicator(bindicatorDoc, photonId)
+
             .then(() => resolve());
     });
 }
@@ -172,30 +203,26 @@ export async function getBindicators(householdId)
     }
 }
 
-export async function getBindicatorSettings(identificationKeyObj)
+export async function getGlobalSettings(householdId)
 {
-    const docRef = await getBindicatorDocument(identificationKeyObj);
+    const householdDoc = await getHouseholdDocument(householdId).get();
 
     return await new Promise(async (resolve, reject) =>
     {
-        return await docRef.get()
-            .then(
-                (doc) =>
-                {
-                    const data = doc.data();
-                    let result;
-                    if (!data)
-                    {
-                        result = { error: "Bindicator not found." };
-                    }
-                    else
-                    {
-                        result = data;
-                    }
-                    resolve(result);
-                    return result;
-                }
-            );
+        const data = householdDoc.data();
+        let result;
+        if (!data)
+        {
+            result = { error: "Bindicator not found." };
+        }
+        else
+        {
+            result = data;
+        }
+
+        resolve(result);
+        return result;
+
     });
 }
 
@@ -257,30 +284,23 @@ export async function saveSettings(settingsData, numResults = 5)
         const recycleDaysRaw = calendar.getDays(settingsData.recycle_day, recycle_scheme, holidays).days;
 
         //save settings
-        const batch = db.batch();
 
-        const docGroup = await db.collection('bindicators').where('household_id', '==', householdId).get();
-        docGroup.forEach((doc) =>
-        {
-            batch.update(doc.ref, {
+        const docGroup = await db.getHouseholdDocument(householdId).get();
+        docGroup.update(doc.ref, {
 
-                trash_schedule: settingsData.trash_day,
-                recycle_schedule: settingsData.recycle_day,
+            trash_schedule: settingsData.trash_day,
+            recycle_schedule: settingsData.recycle_day,
 
-                trash_scheme,
-                recycle_scheme,
+            trash_scheme,
+            recycle_scheme,
 
-                recycle_days: recycleDaysRaw,
-                trash_days: trashDaysRaw
+            recycle_days: recycleDaysRaw,
+            trash_days: trashDaysRaw
 
-            });
-        });
+        }).then(() => checkSchedule(householdId, true));
+
 
         console.log("#", "Settings saved.");
-
-
-        //update button states for household
-        batch.commit().then(() => checkSchedule(householdId, true));
 
         //return preview days for app
         const trash_days = getFormattedDays(trashDaysRaw, numResults);
@@ -303,18 +323,16 @@ export async function getHolidayData(householdId)
 
         try
         {
-            const bindicators = await db.collection('bindicators')
-                .where('household_id', '==', householdId).get();
+            const householdDoc = await db.getHouseholdDocument(householdId).get();
+            const hhData = householdDoc.data();
 
-            const sampleData = bindicators.docs[0].data();
-
-            if (!sampleData.holidays)
+            if (!hhData.holidays)
             {
                 currentHolidays = [];
             }
             else
             {
-                currentHolidays = sampleData.holidays;
+                currentHolidays = hhData.holidays;
             }
 
         } catch (error)
@@ -361,17 +379,10 @@ export async function saveHolidayData(householdId, holidayNames)
         .map(x => x.datestamps)
         .flat(1);
 
-
-    const docGroup = await db.collection('bindicators').where('household_id', '==', householdId).get();
-    const batch = db.batch();
-
-    docGroup.forEach((doc) =>
-    {
-        batch.update(doc.ref, { holidays: newDatestamps });
-    });
+    const householdDoc = await db.getHouseholdDocument(householdId).get();
+    householdDoc.update(doc.ref, { holidays: newDatestamps });
 
     console.log("#", "Holidays saved.");
-    batch.commit();
 }
 
 
@@ -411,9 +422,6 @@ export async function getBindicatorData(identificationKeyObj)
             );
     });
 }
-
-
-
 
 
 export async function getButtonState(identificationKeyObj, category)
@@ -516,17 +524,17 @@ async function setButtonStatesForAllBindicators(category, value = null)
 
 
 ///SCHEDULE
-export async function generateTrashRecycleDays(bindicatorPhotonId) 
+export async function generateTrashRecycleDays(householdDoc) 
 {
     let docGroup;
 
-    if (!bindicatorPhotonId)
+    if (!householdDoc)
     {
-        docGroup = await db.collection('bindicators').get();
+        docGroup = await db.collection('households').get();
     }
     else
     {
-        docGroup = await db.collection('bindicators').where('photon_id', '==', bindicatorPhotonId).get();
+        docGroup = await householdDoc.get();
     }
 
     const hometownDB = await hometown.display();
@@ -676,12 +684,23 @@ export async function whoAmI(photonData)
         //proper photon with photon_id is not in DB, find provisioning photon instead
     }
 
-    const correctDoc = await getBindicatorDocument({ verification_key });
+    const bindicatorDoc = await getBindicatorDocument({ verification_key });
+    const doc = await bindicatorDoc.get();
+    const data = doc.data();
 
-    onboardBindicator(correctDoc, photon_id);
+
+    const householdDoc = await getHouseholdDocument(data.household_id);
+
+    onboardBindicator(bindicatorDoc, householdDoc, data.household_id, photon_id);
     return { photon_id };
 
 
+}
+
+export async function getAPIAuth()
+{
+    const doc = await db.collection('api_auth').doc('auth').get();
+    return doc.data();
 }
 
 

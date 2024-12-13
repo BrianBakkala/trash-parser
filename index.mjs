@@ -63,7 +63,7 @@ server({ security: { csrf: false } }, [
     ),
 
 
-    post('/hooks/get-bindicator-settings', ctx => jsonHeader,
+    post('/hooks/get-global-settings', ctx => jsonHeader,
         async function (ctx)
         {
             // console.log("#", "Received:", ctx.data);
@@ -71,7 +71,7 @@ server({ security: { csrf: false } }, [
             return await checkAuth(ctx,
                 async function (ctx)
                 {
-                    return await fb.getBindicatorSettings(ctx.data);
+                    return await fb.getGlobalSettings(ctx.data.household_id);
                 });
         }
     ),
@@ -180,13 +180,13 @@ server({ security: { csrf: false } }, [
         }
     ),
 
-    post('/hooks/generate-days/:bindicator', ctx => jsonHeader,
+    post('/hooks/generate-days/:household', ctx => jsonHeader,
         async function (ctx)
         {
             return await checkAuth(ctx,
                 async function (ctx)
                 {
-                    return await fb.generateTrashRecycleDays(ctx.params.bindicator);
+                    return await fb.generateTrashRecycleDays(ctx.params.household);
                 });
         }
     ),
@@ -213,23 +213,7 @@ server({ security: { csrf: false } }, [
         }
     ),
 
-
-    // /hooks/settings/set-schedule/:category
-    // /hooks/settings/set-scheme/:category
-    // /hooks/settings/set-holidays
-
-
-
     get('/hooks/override/:category/:value', ctx => jsonHeader, async ctx => await fb.setButtonStatesForAllBindicators(ctx.params.category, ctx.params.value)),
-
-    // get('/papi/test', ctx => jsonHeader, async ctx => await papi.test()),
-
-    // get('/fb/test', ctx => jsonHeader, async ctx => await fb.test()),
-    // get('/fb/gbs', ctx => jsonHeader, async ctx => await fb.getButtonState('123456', 'trash')),
-    // get('/fb/sbs', ctx => jsonHeader, async ctx => await fb.setButtonState('123456', 'trash')),
-    // get('/fb/shbs', ctx => jsonHeader, async ctx => await fb.setHouseholdButtonStates('bakkala_hometown', 'trash')),
-
-
 
 ]);
 
@@ -243,25 +227,38 @@ async function checkAuth(ctx, callback)
         return { success: false, reason: "Security check failed. No auth credentials." };
     }
 
+    //get request data
     const base64Creds = authHeader.split(' ')[1];
     const creds = Buffer.from(base64Creds, 'base64').toString('utf-8');
-
     const [username, password] = creds.split(':');
+    const headerAPIKey1 = ctx.headers['API-Key-1'] || ctx.headers['api-key-1'];
+    const headerAPIKey2 = ctx.headers['API-Key-2'] || ctx.headers['api-key-2'];
 
-    //   authentication logic  
-    if (username === process.env.BASIC_AUTH_USER && password === process.env.BASIC_AUTH_PASSWORD)
+
+    //fetch "the right answers" from fb
+    const apiAuth = await fb.getAPIAuth();
+
+    //authentication logic  
+    if (username !== apiAuth.basic_auth_user && password !== apiAuth.basic_auth_password)
     {
-        const data = await callback(ctx);
-        if (data && data.error)
-        {
-            console.error("Error with data:", { ...data });
-            return { success: false, error: data.error, result: { ...data } };
-
-        }
-        return { success: true, result: { ...data } };
+        console.error("Security check failed. Invalid credentials.");
+        return { success: false, reason: "Security check failed. Invalid credentials." };
     }
 
-    console.error("Security check failed. Invalid credentials.");
-    return { success: false, reason: "Security check failed. Invalid credentials." };
+    if (headerAPIKey1 != apiAuth.api_key_1 || headerAPIKey2 != apiAuth.api_key_2)
+    {
+        console.error("API key mismatch.");
+        return { success: false, error: data.error, result: { ...data } };
+    }
+
+    const data = await callback(ctx);
+    if (data && data.error)
+    {
+        console.error("Error with data:", { ...data });
+        return { success: false, error: data.error, result: { ...data } };
+    }
+
+    //conquered the gauntlet
+    return { success: true, result: { ...data } };
 
 };
