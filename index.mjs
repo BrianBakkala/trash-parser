@@ -77,14 +77,14 @@ server({ security: { csrf: false } }, [
     ),
 
 
-    post('/hooks/get-preview-days', ctx => jsonHeader,
+    post('/hooks/save-settings', ctx => jsonHeader,
         async function (ctx)
         {
 
             return await checkAuth(ctx,
                 async function (ctx)
                 {
-                    return await fb.getPreviewDays(ctx.data, 5);
+                    return await fb.saveSettings(ctx.data, 5);
                 });
         }
     ),

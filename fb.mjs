@@ -199,7 +199,7 @@ export async function getBindicatorSettings(identificationKeyObj)
     });
 }
 
-export async function getPreviewDays(settingsData, numResults = 5)
+export async function saveSettings(settingsData, numResults = 5)
 {
     function getBiweeklyScheme(weekInput)
     {
@@ -233,10 +233,9 @@ export async function getPreviewDays(settingsData, numResults = 5)
 
         const holidays = await getHolidaysSimple(settingsData.device_uuid);
 
-        const getFormattedDays = (dayType, scheme, numResults) =>
+        const getFormattedDays = (daysArray, numResults) =>
         {
-            return calendar.getDays(dayType, scheme, holidays)
-                .days.slice(0, numResults)
+            return daysArray.slice(0, numResults)
                 .map(x => calendar.naturalDate(x, true));
         };
 
@@ -253,8 +252,28 @@ export async function getPreviewDays(settingsData, numResults = 5)
         let trash_scheme = adjustBiweeklyScheme(settingsData.trash_scheme, settingsData.trash_start_option);
         let recycle_scheme = adjustBiweeklyScheme(settingsData.recycle_scheme, settingsData.trash_start_option);
 
-        const trash_days = getFormattedDays(settingsData.trash_day, trash_scheme, numResults);
-        const recycle_days = getFormattedDays(settingsData.recycle_day, recycle_scheme, numResults);
+        const trashDaysRaw = calendar.getDays(settingsData.trash_day, trash_scheme, holidays).days;
+        const recycleDaysRaw = calendar.getDays(settingsData.recycle_day, recycle_scheme, holidays).days;
+
+
+        console.log(holidays);
+
+        //save settings
+
+        const batch = db.batch();
+
+        const docGroup = await db.collection('bindicators').where('household_id', '==', settingsData.device_uuid).get();
+        docGroup.forEach((doc) =>
+        {
+            batch.update(doc.ref, { recycle_days: recycleDaysRaw });
+            batch.update(doc.ref, { trash_days: trashDaysRaw });
+        });
+
+        batch.commit();
+
+        //return preview days for app
+        const trash_days = getFormattedDays(trashDaysRaw, numResults);
+        const recycle_days = getFormattedDays(recycleDaysRaw, numResults);
 
         result = { trash_days, recycle_days };
 
@@ -318,13 +337,11 @@ async function getHolidaysSimple(householdId)
 {
     const data = await getHolidayData(householdId);
 
-    return Object.values(data)
+    return Object.values(data.holidays)
         .filter(x => x.is_selected)
         .map(x => x.datestamps)
         .flat(1);
 }
-
-
 
 export async function saveHolidayData(householdId, holidayNames)
 {
@@ -383,6 +400,8 @@ export async function getBindicatorData(identificationKeyObj)
             );
     });
 }
+
+
 
 
 
@@ -532,9 +551,16 @@ export async function generateTrashRecycleDays(bindicatorPhotonId)
 
     });
 }
-
+/**
+ * meant to be run at noon
+ *
+ * @export
+ * @param {*} bindicatorPhotonId
+ * @return {*} 
+ */
 export async function checkSchedule(bindicatorPhotonId)
 {
+
     const d = new Date();
     const tomorrow = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1);
 
