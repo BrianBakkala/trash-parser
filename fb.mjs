@@ -432,13 +432,25 @@ export async function getBindicatorData(identificationKeyObj)
 }
 export async function updateBindicatorData(dataObj)
 {
-    const bDocRef = await getBindicatorDocument({ monitoring_uuid: dataObj.monitoring_uuid });
+    const identificationKeyObj = { monitoring_uuid: dataObj.monitoring_uuid };
+    const buttonStateKeys = ['trash_on', 'recycle_on'];
+    const bDocRef = await getBindicatorDocument(identificationKeyObj);
 
     try
     {
-        bDocRef.set({
-            ...dataObj
-        }, { merge: true });
+        const batch = db.batch();
+        for (const [key, value] of Object.entries(dataObj))
+        {
+            if (buttonStateKeys.includes(key))
+            {
+                let category = key.split("_on")[0];
+                papi.publishParticleEvent("button_state_changed", { ...identificationKeyObj, category, value });
+            }
+
+            batch.update(bDocRef, { [key]: value });
+
+        }
+        await batch.commit(); // Commit all updates at once
 
     } catch (error)
     {
@@ -473,20 +485,27 @@ export async function setButtonState(identificationKeyObj, category, value = nul
 
     return new Promise((resolve, reject) =>
     {
-        this.getButtonState(identificationKeyObj, category).then((state) =>
-        {
-            if (value == null)
-            {
-                value = !state.state;
-            }
+        let updateValuePromise;
 
-            docRef.update({ [category + '_on']: value })
+        if (value == null)
+        {
+            updateValuePromise = this.getButtonState(identificationKeyObj, category).then((state) =>
+            {
+                return !state.state;
+            });
+        } else
+        {
+            updateValuePromise = Promise.resolve(value); //it's fine, insta-send
+        }
+
+        updateValuePromise.then((resolvedValue) =>
+        {
+            docRef.update({ [category + '_on']: resolvedValue })
                 .then(() =>
                 {
-                    papi.publishParticleEvent("button_state_changed", { ...identificationKeyObj, category, value });
+                    papi.publishParticleEvent("button_state_changed", { ...identificationKeyObj, category, value: resolvedValue });
                     resolve();
                 });
-
         });
     });
 }
