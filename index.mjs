@@ -57,7 +57,27 @@ server({ security: { csrf: false } }, [
             return await checkAuth(ctx,
                 async function (ctx)
                 {
-                    return await fb.getBindicatorData(ctx.data.coreid);
+                    let obj = { ...ctx.data };
+
+                    if (obj.hasOwnProperty('coreid'))
+                    {
+                        obj = { photon_id: ctx.data.coreid };
+                    }
+
+                    console.log(obj);
+
+                    return await fb.getBindicatorData(obj);
+                });
+        }
+    ),
+
+    post('/hooks/update-bindicator-data', ctx => jsonHeader,
+        async function (ctx)
+        {
+            return await checkAuth(ctx,
+                async function (ctx)
+                {
+                    return await fb.updateBindicatorData(ctx.data);
                 });
         }
     ),
@@ -111,7 +131,6 @@ server({ security: { csrf: false } }, [
                 });
         }
     ),
-
 
 
     post('/hooks/get-bindicators-for-household', ctx => jsonHeader,

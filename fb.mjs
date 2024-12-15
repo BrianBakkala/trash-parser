@@ -75,7 +75,7 @@ export async function getHouseholdDocument(householdId, forceNewDoc = false)
 
     if (forceNewDoc)
     {
-        return db.collection('households').doc();
+        return await db.collection('households').doc();
     }
 
     throw new Error('No matching document found or multiple matches.');
@@ -98,18 +98,16 @@ export async function addProvisioningBindicator(verification_key, household_id)
                 monitoring_uuid,
                 verification_key,
                 provisioning_status: true
-            });
+            }, { merge: true });
 
             const hDocRef = await getHouseholdDocument(household_id, true);
 
             hDocRef.set({
-
-
                 household_id,
                 household_name: "",
 
 
-                holidays: {},
+                holidays: [],
 
                 recycle_schedule: "W",
                 trash_schedule: "W",
@@ -118,7 +116,7 @@ export async function addProvisioningBindicator(verification_key, household_id)
                 recycle_scheme: "biweekly first"
 
 
-            }, { merge: true }).then(() => generateTrashRecycleDays(hDocRef));
+            }, { merge: true }).then(() => generateTrashRecycleDays(household_id));
 
             resolve({ monitoring_uuid });
             return { monitoring_uuid };  // Returning a uuid to monitor for an updated photonID
@@ -205,7 +203,8 @@ export async function getBindicators(householdId)
 
 export async function getGlobalSettings(householdId)
 {
-    const householdDoc = await getHouseholdDocument(householdId).get();
+    const snap = await getHouseholdDocument(householdId);
+    const householdDoc = await snap.get();
 
     return await new Promise(async (resolve, reject) =>
     {
@@ -278,26 +277,35 @@ export async function saveSettings(settingsData, numResults = 5)
         };
 
         let trash_scheme = adjustBiweeklyScheme(settingsData.trash_scheme, settingsData.trash_start_option);
-        let recycle_scheme = adjustBiweeklyScheme(settingsData.recycle_scheme, settingsData.trash_start_option);
+        let recycle_scheme = adjustBiweeklyScheme(settingsData.recycle_scheme, settingsData.recycle_start_option);
 
         const trashDaysRaw = calendar.getDays(settingsData.trash_day, trash_scheme, holidays).days;
         const recycleDaysRaw = calendar.getDays(settingsData.recycle_day, recycle_scheme, holidays).days;
 
         //save settings
 
-        const docGroup = await db.getHouseholdDocument(householdId).get();
-        docGroup.update(doc.ref, {
-
-            trash_schedule: settingsData.trash_day,
-            recycle_schedule: settingsData.recycle_day,
-
-            trash_scheme,
-            recycle_scheme,
-
-            recycle_days: recycleDaysRaw,
-            trash_days: trashDaysRaw
-
-        }).then(() => checkSchedule(householdId, true));
+        getHouseholdDocument(householdId)
+            .then((snap) =>
+            {
+                return snap.get(); // Get the document snapshot
+            })
+            .then((doc) =>
+            {
+                // Update the document directly using doc.ref
+                return doc.ref.update({
+                    trash_schedule: settingsData.trash_day,
+                    recycle_schedule: settingsData.recycle_day,
+                    trash_scheme,
+                    recycle_scheme,
+                    recycle_days: recycleDaysRaw,
+                    trash_days: trashDaysRaw
+                });
+            })
+            .then(() => checkSchedule(householdId, true))
+            .catch((error) =>
+            {
+                console.error("Error updating household document:", error);
+            });
 
 
         console.log("#", "Settings saved.");
@@ -323,32 +331,39 @@ export async function getHolidayData(householdId)
 
         try
         {
-            const householdDoc = await db.getHouseholdDocument(householdId).get();
-            const hhData = householdDoc.data();
-
-            if (!hhData.holidays)
+            currentHolidays = await getHouseholdDocument(householdId).then(async (snap) =>
             {
-                currentHolidays = [];
-            }
-            else
-            {
-                currentHolidays = hhData.holidays;
-            }
+                const householdDoc = await snap.get();
+                const hhData = householdDoc.data();
 
-        } catch (error)
+                if (!hhData.holidays)
+                {
+                    return [];
+                }
+                else
+                {
+                    return hhData.holidays;
+                }
+
+            });
+
+        }
+        catch (error)
         {
 
-            reject({ success: false, error: "Error getting document." });
+            reject("Error getting document.");
             return { success: false, error: "Error getting document." };
         }
 
-        result = calendar.getHolidaysDatabase();
+        result = { ...calendar.getHolidaysDatabase() };
+
 
         if (currentHolidays.length > 0)
         {
             for (let holidayName of Object.keys(result))
             {
                 const entry = result[holidayName];
+
                 if (haveCommonElement(entry.datestamps, currentHolidays))
                 {
                     result[holidayName].is_selected = true;
@@ -356,7 +371,6 @@ export async function getHolidayData(householdId)
             }
 
         }
-
         resolve({ holidays: [...Object.values(result)] });
         return result;
     });
@@ -379,8 +393,8 @@ export async function saveHolidayData(householdId, holidayNames)
         .map(x => x.datestamps)
         .flat(1);
 
-    const householdDoc = await db.getHouseholdDocument(householdId).get();
-    householdDoc.update(doc.ref, { holidays: newDatestamps });
+    const snap = await getHouseholdDocument(householdId);
+    await snap.update({ holidays: newDatestamps });
 
     console.log("#", "Holidays saved.");
 }
@@ -392,35 +406,45 @@ export async function saveHolidayData(householdId, holidayNames)
 ///BUTTON STATES
 export async function getBindicatorData(identificationKeyObj)
 {
-    const docRef = await getBindicatorDocument(identificationKeyObj);
-
-    return await new Promise(async (resolve, reject) =>
+    console.log(identificationKeyObj);
+    try
     {
-        return await docRef.get()
-            .then(
-                (doc) =>
-                {
-                    const data = doc.data();
-                    let result;
-                    if (!data)
-                    {
-                        result = { error: "Bindicator not found." };
-                    }
-                    else
-                    {
+        const doc = await getBindicatorDocument(identificationKeyObj);
 
-                        result = {
-                            trash_on: data.trash_on,
-                            recycle_on: data.recycle_on,
-                            household_id: data.household_id,
-                        };
+        return await doc.get().then((doc) =>
+        {
+            const data = doc.data();
 
-                    }
-                    resolve(result);
-                    return result;
-                }
-            );
-    });
+            if (!data)
+            {
+                return { error: "Bindicator not found." };
+            }
+
+            return data;
+
+        });
+
+    } catch (error)
+    {
+        console.error("Error fetching bindicator data:", error);
+        throw new Error("Unable to retrieve bindicator data.");
+    }
+}
+export async function updateBindicatorData(dataObj)
+{
+    const bDocRef = await getBindicatorDocument({ monitoring_uuid: dataObj.monitoring_uuid });
+
+    try
+    {
+        bDocRef.set({
+            ...dataObj
+        }, { merge: true });
+
+    } catch (error)
+    {
+        console.error("Error fetching bindicator data:", error);
+        throw new Error("Unable to update bindicator data.");
+    }
 }
 
 
@@ -524,52 +548,68 @@ async function setButtonStatesForAllBindicators(category, value = null)
 
 
 ///SCHEDULE
-export async function generateTrashRecycleDays(householdDoc) 
+export async function generateTrashRecycleDays(householdId)
 {
-    let docGroup;
-
-    if (!householdDoc)
+    try
     {
-        docGroup = await db.collection('households').get();
-    }
-    else
-    {
-        docGroup = await householdDoc.get();
-    }
+        let snap;
 
-    const hometownDB = await hometown.display();
-
-    return new Promise(async (resolve, reject) =>
-    {
-        if (!docGroup.empty)
+        //fetch documents
+        if (!householdId)
         {
-            // Start a batch  
-            const batch = db.batch();
-
-            docGroup.forEach((doc) =>
-            {
-                const data = doc.data();
-                if (data.household_id == "bakkala_hometown")
-                {
-                    batch.update(doc.ref, { trash_days: hometownDB.trash_days, recycle_days: hometownDB.recycling_days });
-                }
-                else
-                {
-                    const trashDays = calendar.getDays(data.trash_schedule, data.trash_scheme, data.holidays);
-                    const recycleDays = calendar.getDays(data.recycle_schedule, data.recycle_scheme, data.holidays);
-
-                    batch.update(doc.ref, { holidays: getHolidaysSimple(data.household_id) });
-                    batch.update(doc.ref, { trash_days: trashDays.days, recycle_days: recycleDays.days });
-                }
-            });
-
-            // Commit the batch  
-            console.log("#", "Trash and recycle days generated.");
-            await batch.commit().then(() => { resolve(); });
+            snap = db.collection('households');
+        } else
+        {
+            snap = db.collection('households').where('household_id', '==', householdId);
         }
 
-    });
+        const docGroup = await snap.get();
+
+        if (docGroup.empty)
+        {
+            console.log("No documents found.");
+            return;
+        }
+
+        const hometownDB = await hometown.display();
+
+        // Start a batch
+        const batch = db.batch();
+
+        for (let i = 0; i < docGroup.docs.length; i++)
+        {
+            const doc = docGroup.docs[i]; //   individual doc
+            const data = doc.data();
+            const holidaysSimple = await getHolidaysSimple(data.household_id);
+
+            console.log(data);
+            console.log(holidaysSimple);
+
+            if (data.household_id === "bakkala_hometown")
+            {
+                batch.update(doc.ref, {
+                    trash_days: hometownDB.trash_days,
+                    recycle_days: hometownDB.recycling_days
+                });
+            } else
+            {
+                const trashDays = calendar.getDays(data.trash_schedule, data.trash_scheme, data.holidays);
+                const recycleDays = calendar.getDays(data.recycle_schedule, data.recycle_scheme, data.holidays);
+
+                batch.set(doc.ref, { holidays: holidaysSimple }, { merge: true });
+                batch.set(doc.ref, { trash_days: trashDays.days, recycle_days: recycleDays.days }, { merge: true });
+            }
+        }
+
+        // Commit the batch
+        await batch.commit();
+        console.log("Trash and recycle days generated.");
+    } catch (error)
+    {
+        console.error("Error generating trash and recycle days:", error);
+    }
 }
+
 
 /**
  * Optimally cronjobbed to run at noon every day
@@ -689,10 +729,17 @@ export async function whoAmI(photonData)
     const data = doc.data();
 
 
-    const householdDoc = await getHouseholdDocument(data.household_id);
+    await getHouseholdDocument(data.household_id).then((householdDoc) =>
+    {
 
-    onboardBindicator(bindicatorDoc, householdDoc, data.household_id, photon_id);
-    return { photon_id };
+        onboardBindicator(bindicatorDoc, householdDoc, data.household_id, photon_id);
+        console.log("#", "Successfully contacted photon:", photon_id);
+        return { photon_id };
+
+
+    });
+
+
 
 
 }
