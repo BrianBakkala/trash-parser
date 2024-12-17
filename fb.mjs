@@ -88,7 +88,7 @@ export async function addProvisioningBindicator(verification_key, household_id)
     {
         try
         {
-            const { ssid, setup_code } = parseVerificationKey(verification_key);
+            const { setup_code, ssid } = parseVerificationKey(verification_key);
             const monitoring_uuid = uuid();
 
             const bDocRef = await getBindicatorDocument({ verification_key }, true);
@@ -102,11 +102,13 @@ export async function addProvisioningBindicator(verification_key, household_id)
 
             const hDocRef = await getHouseholdDocument(household_id, true);
 
+            const wifeWifi = process.env.WIFE_WIFI;
+
             hDocRef.set({
                 household_id,
                 household_name: "",
 
-                wife: ssid == process.env.WIFE_WIFI,
+                wife: (ssid == wifeWifi),
 
                 holidays: [],
 
@@ -602,13 +604,9 @@ export async function generateTrashRecycleDays(householdId)
             const data = doc.data();
             const holidaysSimple = await getHolidaysSimple(data.household_id);
 
-            console.log(data);
-            console.log(holidaysSimple);
-
             if (data.wife)
             {
                 batch.update(doc.ref, {
-
                     trash_scheme: hometownDB.trash_scheme,
                     recycle_scheme: hometownDB.recycle_scheme,
 
@@ -792,7 +790,7 @@ function createVerificationKey(ssid, setupCode)
 
 function parseVerificationKey(verificationKey)
 {
-    const [ssid, setup_code] = atob(verificationKey).split(VERIFICATION_KEY_DELIMITER)
+    const [setup_code, ssid] = atob(verificationKey).split(VERIFICATION_KEY_DELIMITER)
         .map(x => atob(x));
 
     return { ssid, setup_code };
