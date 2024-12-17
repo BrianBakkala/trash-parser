@@ -59,7 +59,7 @@ export async function getBindicatorDocument(obj, forceNewDoc = false)
         return db.collection('bindicators').doc();
     }
 
-    throw new Error('No matching document found or multiple matches.');
+    throw new Error('No matching document found or multiple matches for key:' + JSON.stringify(obj));
 }
 
 export async function getHouseholdDocument(householdId, forceNewDoc = false)
@@ -78,7 +78,7 @@ export async function getHouseholdDocument(householdId, forceNewDoc = false)
         return await db.collection('households').doc();
     }
 
-    throw new Error('No matching document found or multiple matches.');
+    throw new Error('No matching document found or multiple matches for key.');
 }
 
 
@@ -330,7 +330,7 @@ export async function getHolidayData(householdId)
                 }
                 else
                 {
-                    return hhData.holidays;
+                    return { holidays: hhData.holidays, wife: hhData.wife };
                 }
 
             });
@@ -420,7 +420,15 @@ export async function getBindicatorData(identificationKeyObj)
 }
 export async function updateBindicatorData(dataObj)
 {
-    const identificationKeyObj = { monitoring_uuid: dataObj.monitoring_uuid };
+
+    const key = IDENTIFICATION_KEYS.find(k => dataObj.hasOwnProperty(k));
+    if (!key)
+    {
+        throw new Error('No valid identification key found in the object.');
+    }
+
+    const identificationKeyObj = { [key]: dataObj[key] };
+
     const buttonStateKeys = ['trash_on', 'recycle_on'];
     const bDocRef = await getBindicatorDocument(identificationKeyObj);
 
@@ -438,7 +446,7 @@ export async function updateBindicatorData(dataObj)
             batch.update(bDocRef, { [key]: value });
 
         }
-        await batch.commit(); // Commit all updates at once
+        await batch.commit(); //commit all updates at once
 
     } catch (error)
     {
