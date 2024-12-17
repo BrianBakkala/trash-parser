@@ -608,9 +608,13 @@ export async function generateTrashRecycleDays(householdId)
             if (data.wife)
             {
                 batch.update(doc.ref, {
-                    recycle_scheme: hometownDB.day_of_week,
+
+                    trash_scheme: hometownDB.trash_scheme,
+                    recycle_scheme: hometownDB.recycle_scheme,
+
                     recycle_schedule: hometownDB.day_of_week,
                     trash_schedule: hometownDB.day_of_week,
+
                     trash_days: hometownDB.trash_days,
                     recycle_days: hometownDB.recycling_days
                 });
