@@ -800,16 +800,6 @@ function haveCommonElement(array1, array2)
     return array2.some(element => set1.has(element));
 }
 
-
-export function test()
-{
-    // const hh = "bakkala_northborough";
-    // onboardBindicator(hh, "222");
-
-    return parsehometown();
-}
-
-
 function isBefore(time)
 {
     // Get the current time
