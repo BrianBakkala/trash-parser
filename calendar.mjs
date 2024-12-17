@@ -3,6 +3,7 @@ const monthNames = [
     "January", "February", "March", "April", "May", "June",
     "July", "August", "September", "October", "November", "December"
 ];
+
 export function getDays(dayOfWeek, scheme, holidays = [], year = null, full = false)
 {
     if (DOW_MAP.hasOwnProperty(dayOfWeek))
