@@ -15,7 +15,6 @@ export async function publishParticleEvent(eventName, eventData)
                     eventData
                 ),
 
-
                 product: "photon-bindicator-33671",
                 auth: token
             }

@@ -132,6 +132,7 @@ export async function addProvisioningBindicator(verification_key, household_id)
         }
     });
 }
+
 /**
  * Sets up a provisioning Bindicator with the correct new properties.
  *
@@ -204,6 +205,7 @@ export async function getBindicators(householdId)
         throw error;
     }
 }
+
 
 export async function getGlobalSettings(householdId)
 {
