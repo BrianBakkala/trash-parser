@@ -9,10 +9,11 @@ import { createRequire } from 'module';
 import { DocumentReference } from 'firebase-admin/firestore';
 const require = createRequire(import.meta.url);
 const serviceAccount = require('./config/firebaseServiceAccountKey.json');
+
 const VERIFICATION_KEY_DELIMITER = ":: ::";
 const IDENTIFICATION_KEYS = ['photon_id', 'monitoring_uuid', 'verification_key']; //sorted by desirability
 
-const db = await intializeFirebase();  // Firestore instance
+const db = await intializeFirebase();  //Firestore instance
 
 async function intializeFirebase()
 {
@@ -166,7 +167,7 @@ export async function createBindicator(docReference, photon_id)
 
 }
 
-export async function onboardBindicator(bindicatorDoc, householdDoc, householdId, photonId)
+export async function onboardBindicator(bindicatorDoc, photonId)
 {
     console.log("#", "Onboarding Bindicator...");
 
@@ -733,10 +734,7 @@ function lightShouldTurnOff(daysArray, todayDate, tomorrowDate)
 }
 
 
-
-
 ///AUTH
-
 export async function whoAmI(photonData) 
 {
     //get data from photon
@@ -760,12 +758,9 @@ export async function whoAmI(photonData)
 
     await getHouseholdDocument(data.household_id).then((householdDoc) =>
     {
-
-        onboardBindicator(bindicatorDoc, householdDoc, data.household_id, photon_id);
+        onboardBindicator(bindicatorDoc, photon_id);
         console.log("#", "Successfully contacted photon:", photon_id);
         return { photon_id };
-
-
     });
 
 

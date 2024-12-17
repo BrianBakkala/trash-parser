@@ -1,10 +1,4 @@
-// endpoint
-// https://bindicator-439415.ue.r.appspot.com/
-
-import * as papi from './particle_api.mjs';
 import * as fb from './fb.mjs';
-import * as hometown from './hometown.mjs';
-import * as util from './utility.mjs';
 
 import server from 'server';
 const { get, post } = server.router;
@@ -13,44 +7,12 @@ const { header } = server.reply;
 
 const jsonHeader = header('Content-Type', 'application/json');;
 
-// Answers to any request
+// answers to any request
 server({ security: { csrf: false } }, [
     get('/', ctx => jsonHeader, ctx => process.env.ENV_TEST),
     get('/favicon.ico', ctx => jsonHeader, ctx => 'Hello'),
 
-    // get('/hometown', ctx => jsonHeader, async ctx => await hometown.display()),
-    // get('/hometown/simple', ctx => jsonHeader, async ctx => await hometown.display_simple()),
-    // get('/hometown/full/:dow', ctx => jsonHeader, async ctx => await hometown.display(ctx.params.dow)),
-    // get('/hometown/simple/:dow', ctx => jsonHeader, async ctx => await hometown.display_simple(ctx.params.dow)),
-    get('/test', ctx => jsonHeader, async ctx => { return { success: true, message: "hello there" }; }),
-    // get('/test/random', ctx => jsonHeader, async ctx => await hometown.display_test(Math.random() < 0.5, Math.random() < 0.5)),
-    // get('/test/:trash/:recycling', ctx => jsonHeader, async ctx => await hometown.display_test(ctx.params.trash, ctx.params.recycling)),
-
-
-    post('/hooks/set-button-state', ctx => jsonHeader,
-        async function (ctx)
-        {
-            return await checkAuth(ctx,
-                async function (ctx)
-                {
-                    return await fb.setButtonState(ctx.data.coreid, ctx.data.data);
-                });
-        }
-    ),
-
-    post('/hooks/get-button-state', ctx => jsonHeader,
-        async function (ctx)
-        {
-            return await checkAuth(ctx,
-                async function (ctx)
-                {
-                    return await fb.getButtonState(ctx.data.coreid, ctx.data.data);
-                });
-        }
-    ),
-
-
-
+    // device prefs
     post('/hooks/get-bindicator-data', ctx => jsonHeader,
         async function (ctx)
         {
@@ -82,7 +44,7 @@ server({ security: { csrf: false } }, [
         }
     ),
 
-
+    // global prefs
     post('/hooks/get-global-settings', ctx => jsonHeader,
         async function (ctx)
         {
@@ -96,7 +58,6 @@ server({ security: { csrf: false } }, [
         }
     ),
 
-
     post('/hooks/save-settings', ctx => jsonHeader,
         async function (ctx)
         {
@@ -109,6 +70,7 @@ server({ security: { csrf: false } }, [
         }
     ),
 
+    // holidays
     post('/hooks/get-holiday-data', ctx => jsonHeader,
         async function (ctx)
         {
@@ -132,7 +94,7 @@ server({ security: { csrf: false } }, [
         }
     ),
 
-
+    // home-screen
     post('/hooks/get-bindicators-for-household', ctx => jsonHeader,
         async function (ctx)
         {
@@ -141,31 +103,7 @@ server({ security: { csrf: false } }, [
         }
     ),
 
-
-    post('/hooks/onboard-bindicator', ctx => jsonHeader,
-        async function (ctx)
-        {
-            return await checkAuth(ctx,
-                async function (ctx)
-                {
-                    return await fb.onboardBindicator(null, ctx.data.coreid);
-                });
-        }
-    ),
-
-    post('/hooks/onboard-bindicator/:householdId', ctx => jsonHeader,
-        async function (ctx)
-        {
-            return await checkAuth(ctx,
-                async function (ctx)
-                {
-                    return await fb.onboardBindicator(ctx.params.householdId, ctx.data.coreid);
-                });
-        }
-    ),
-
-
-
+    //cronjob?
     post('/hooks/check-schedule', ctx => jsonHeader,
         async function (ctx)
         {
@@ -177,39 +115,7 @@ server({ security: { csrf: false } }, [
         }
     ),
 
-    post('/hooks/check-schedule/:household', ctx => jsonHeader,
-        async function (ctx)
-        {
-            return await checkAuth(ctx,
-                async function (ctx)
-                {
-                    return await fb.checkSchedule(ctx.params.household);
-                });
-        }
-    ),
-
-    post('/hooks/generate-days', ctx => jsonHeader,
-        async function (ctx)
-        {
-            return await checkAuth(ctx,
-                async function (ctx)
-                {
-                    return await fb.generateTrashRecycleDays();
-                });
-        }
-    ),
-
-    post('/hooks/generate-days/:household', ctx => jsonHeader,
-        async function (ctx)
-        {
-            return await checkAuth(ctx,
-                async function (ctx)
-                {
-                    return await fb.generateTrashRecycleDays(ctx.params.household);
-                });
-        }
-    ),
-
+    //provisioning
     post('/hooks/post-provision', ctx => jsonHeader,
         async function (ctx)
         {
@@ -232,6 +138,8 @@ server({ security: { csrf: false } }, [
         }
     ),
 
+
+    //test
     get('/hooks/override/:category/:value', ctx => jsonHeader, async ctx => await fb.setButtonStatesForAllBindicators(ctx.params.category, ctx.params.value)),
 
 ]);

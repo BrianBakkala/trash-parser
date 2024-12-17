@@ -3,7 +3,7 @@ const monthNames = [
     "January", "February", "March", "April", "May", "June",
     "July", "August", "September", "October", "November", "December"
 ];
-export function getDays(dayOfWeek, scheme, holidays = null, year = null, full = false)
+export function getDays(dayOfWeek, scheme, holidays = [], year = null, full = false)
 {
     if (DOW_MAP.hasOwnProperty(dayOfWeek))
     {
@@ -13,11 +13,6 @@ export function getDays(dayOfWeek, scheme, holidays = null, year = null, full = 
     if (year == null)
     {
         year = new Date().getFullYear();
-    }
-
-    if (holidays == null)
-    {
-        holidays = getSampleHolidays(year);
     }
 
     let collectionDays = [];
@@ -80,37 +75,24 @@ export function naturalDate(datestamp, abbrev = false)
     return (abbrev ? m.slice(0, 3) : m) + " " + +day;
 }
 
-function getSampleHolidays(year = 2024)
-{
-    return [
-        new Date("January 1, " + year),
-        new Date("May 27, " + year),
-        new Date("July 4, " + year),
-        new Date("September 2, " + year),
-        new Date("November 28, " + year),
-        new Date("December 25, " + year)
-    ];
-}
-
-
 export function getHolidaysDatabase(year = 2024)
 {
     let db = {};
     try
     {
         [
-            getHolidayEntry(year, "New Years' Day", (year) => "January 1, " + year),
-            getHolidayEntry(year, "Martin Luther King Jr. Day", martinLutherKingJrDay),
-            getHolidayEntry(year, "Presidents' Day", presidentsDay),
-            getHolidayEntry(year, "Easter Sunday", easterSunday),
-            getHolidayEntry(year, "Patriots' Day", patriotsDay),
-            getHolidayEntry(year, "Memorial Day", memorialDay),
-            getHolidayEntry(year, "Independence Day", (year) => "July 4, " + year),
-            getHolidayEntry(year, "Labor Day", laborDay),
-            getHolidayEntry(year, "Indigenous People's Day", columbusDay),
-            getHolidayEntry(year, "Veterans Day", (year) => "November 11, " + year),
-            getHolidayEntry(year, "Thanksgiving Day", thanksgivingDay),
-            getHolidayEntry(year, "Christmas Day", (year) => "December 25, " + year),
+            generateHolidayEntry(year, "New Years' Day", (year) => "January 1, " + year),
+            generateHolidayEntry(year, "Martin Luther King Jr. Day", martinLutherKingJrDay),
+            generateHolidayEntry(year, "Presidents' Day", presidentsDay),
+            generateHolidayEntry(year, "Easter Sunday", easterSunday),
+            generateHolidayEntry(year, "Patriots' Day", patriotsDay),
+            generateHolidayEntry(year, "Memorial Day", memorialDay),
+            generateHolidayEntry(year, "Independence Day", (year) => "July 4, " + year),
+            generateHolidayEntry(year, "Labor Day", laborDay),
+            generateHolidayEntry(year, "Indigenous People's Day", columbusDay),
+            generateHolidayEntry(year, "Veterans Day", (year) => "November 11, " + year),
+            generateHolidayEntry(year, "Thanksgiving Day", thanksgivingDay),
+            generateHolidayEntry(year, "Christmas Day", (year) => "December 25, " + year),
 
         ].forEach(entry =>
             db[entry.name] = entry
@@ -124,7 +106,7 @@ export function getHolidaysDatabase(year = 2024)
     return db;
 }
 
-function getHolidayEntry(startYear, name, calculationFunction)
+function generateHolidayEntry(startYear, name, calculationFunction)
 {
     let datestamps = [];
 

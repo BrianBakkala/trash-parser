@@ -29,6 +29,7 @@ export function roundToInterval(num, interval)
     // Use the interval precision to determine how many decimal places to keep
     return parseFloat(result.toFixed(intervalPrecision));
 }
+
 export function writeJSONToFile(obj, filename = 'sample.json')
 {
     // Convert JSON object to string
@@ -41,7 +42,6 @@ export function writeJSONToFile(obj, filename = 'sample.json')
     console.log("#", 'Data has been written to ' + filename);
 
 };
-
 
 /**
  *
@@ -102,19 +102,4 @@ function convertPDFItemsToPseudoTable(items)
 
     return result;
 }
-
-
-function trimBuffer(buffer)
-{
-    let length = buffer.byteLength;
-    const view = new Uint8Array(buffer);
-
-    // Traverse backwards and find the last non-null byte
-    while (length > 0 && view[length - 1] === 0)
-    {
-        length--;
-    }
-
-    // Slice the buffer to remove the trailing nulls
-    return buffer.slice(0, length);
-}
+ 

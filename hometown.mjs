@@ -62,25 +62,4 @@ export async function display(dowLetter = null)
     );
 
     return { ...dayOfWeekData, ...calendarData };
-}
-
-export async function display_simple(dowLetter = null)
-{
-    const obj = await this.display(dowLetter);
-    return obj.simple;
-}
-
-export async function display_test(trashBool = "true", recyclingBool = "true")
-{
-    const now = new Date();
-    const year = now.getFullYear();
-
-    trashBool = JSON.parse(trashBool);
-    recyclingBool = JSON.parse(recyclingBool);
-
-    return {
-        trash_simple: trashBool,
-        recycling_simple: recyclingBool,
-        year
-    };
-}
+} 
