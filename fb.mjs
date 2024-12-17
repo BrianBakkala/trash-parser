@@ -591,7 +591,8 @@ export async function generateTrashRecycleDays(householdId)
 
             if (data.wife)
             {
-                batch.update(doc.ref, {
+                //don't add to batch, update directly
+                await doc.ref.update({
                     trash_scheme: hometownDB.trash_scheme,
                     recycle_scheme: hometownDB.recycle_scheme,
 
@@ -603,11 +604,19 @@ export async function generateTrashRecycleDays(householdId)
 
                     holidays: hometownDB.holidays
                 });
+
+                //refresh holidays across multiple years using data just updated above
+                const updatedHolidays = await getHolidaysSimple(data.household_id);
+                batch.set(doc.ref, { holidays: updatedHolidays }, { merge: true });
+
+
             } else
             {
                 const trashDays = calendar.getDays(data.trash_schedule, data.trash_scheme, data.holidays);
                 const recycleDays = calendar.getDays(data.recycle_schedule, data.recycle_scheme, data.holidays);
 
+
+                //refresh holidays
                 batch.set(doc.ref, { holidays: holidaysSimple }, { merge: true });
                 batch.set(doc.ref, { trash_days: trashDays.days, recycle_days: recycleDays.days }, { merge: true });
             }
