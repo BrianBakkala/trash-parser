@@ -88,7 +88,7 @@ export async function addProvisioningBindicator(verification_key, household_id)
     {
         try
         {
-            // const { ssid, setup_code } = parseVerificationKey(verification_key);
+            const { ssid, setup_code } = parseVerificationKey(verification_key);
             const monitoring_uuid = uuid();
 
             const bDocRef = await getBindicatorDocument({ verification_key }, true);
@@ -97,7 +97,7 @@ export async function addProvisioningBindicator(verification_key, household_id)
                 household_id,
                 monitoring_uuid,
                 verification_key,
-                provisioning_status: true
+                provisioning_status: true,
             }, { merge: true });
 
             const hDocRef = await getHouseholdDocument(household_id, true);
@@ -106,6 +106,7 @@ export async function addProvisioningBindicator(verification_key, household_id)
                 household_id,
                 household_name: "",
 
+                wife: ssid == process.env.WIFE_WIFI,
 
                 holidays: [],
 
@@ -604,9 +605,12 @@ export async function generateTrashRecycleDays(householdId)
             console.log(data);
             console.log(holidaysSimple);
 
-            if (data.household_id === "bakkala_hometown")
+            if (data.wife)
             {
                 batch.update(doc.ref, {
+                    recycle_scheme: hometownDB.day_of_week,
+                    recycle_schedule: hometownDB.day_of_week,
+                    trash_schedule: hometownDB.day_of_week,
                     trash_days: hometownDB.trash_days,
                     recycle_days: hometownDB.recycling_days
                 });
