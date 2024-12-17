@@ -66,6 +66,8 @@ export function getTrashRecyclingDays(lines, dayOfWeekIndex, recycleScheme = "bi
         recycle_scheme: recycleScheme,
         trash_scheme: "weekly",
 
+        holidays: holidays.map(x => x.toDateString()),
+
         trash_day_curr: relevantTrashDays[0] ?? null,
         trash_day_curr_string: relevantTrashDays[0] ? relevantTrashDays[0].toLocaleDateString('en-CA') : null,
         trash_day_next: relevantTrashDays[1] ? relevantTrashDays[1].toLocaleDateString('en-CA') : null,

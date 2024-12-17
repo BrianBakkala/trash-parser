@@ -209,6 +209,17 @@ export async function getGlobalSettings(householdId)
     const snap = await getHouseholdDocument(householdId);
     const householdDoc = await snap.get();
 
+
+    const adjustBiweeklyScheme = (scheme, startOption) =>
+    {
+        if (scheme.startsWith("biweekly"))
+        {
+            const schemeWeek = getBiweeklyScheme(startOption);
+            return 'biweekly ' + schemeWeek;
+        }
+        return scheme;
+    };
+
     return await new Promise(async (resolve, reject) =>
     {
         const data = householdDoc.data();
@@ -230,32 +241,6 @@ export async function getGlobalSettings(householdId)
 
 export async function saveSettings(settingsData, numResults = 5)
 {
-    function getBiweeklyScheme(weekInput)
-    {
-
-        function getWeekNumber(date)
-        {
-            const startOfYear = new Date(date.getFullYear(), 0, 1);
-            const daysSinceStartOfYear = Math.floor((date - startOfYear) / (1000 * 60 * 60 * 24));
-            const weekNumber = Math.ceil((daysSinceStartOfYear + startOfYear.getDay() + 1) / 7);
-            return weekNumber;
-        }
-
-        // get current and next week numbers
-        const currentWeek = getWeekNumber(new Date());
-        const nextWeek = currentWeek + 1;
-
-        if (
-            (weekInput === 'this' && currentWeek % 2 == 0) ||
-            (weekInput === 'next' && nextWeek % 2 == 0)
-        )
-        {
-            return 'first';
-        }
-
-        return 'second';
-    }
-
     return await new Promise(async (resolve, reject) =>
     {
         let result;
@@ -614,7 +599,9 @@ export async function generateTrashRecycleDays(householdId)
                     trash_schedule: hometownDB.day_of_week,
 
                     trash_days: hometownDB.trash_days,
-                    recycle_days: hometownDB.recycling_days
+                    recycle_days: hometownDB.recycling_days,
+
+                    holidays: hometownDB.holidays
                 });
             } else
             {
@@ -836,4 +823,28 @@ function isAfter(time)
         return true;
     }
     return false;
+}
+
+function getWeekNumber(date)
+{
+    const startOfYear = new Date(date.getFullYear(), 0, 1);
+    const daysSinceStartOfYear = Math.floor((date - startOfYear) / (1000 * 60 * 60 * 24));
+    const weekNumber = Math.ceil((daysSinceStartOfYear + startOfYear.getDay() + 1) / 7);
+    return weekNumber;
+}
+
+function getBiweeklyScheme(thisNextInput)
+{
+    const currentWeek = getWeekNumber(new Date());
+    const nextWeek = currentWeek + 1;
+
+    if (
+        (thisNextInput === "this" && currentWeek % 2 == 0) ||
+        (thisNextInput === "next" && nextWeek % 2 == 0)
+    )
+    {
+        return "first";
+    }
+
+    return "second";
 }
