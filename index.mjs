@@ -2,7 +2,7 @@ import * as fb from './fb.mjs';
 
 import server from 'server';
 const { get, post } = server.router;
-const { header } = server.reply;
+const { header, render } = server.reply;
 
 
 const jsonHeader = header('Content-Type', 'application/json');;
@@ -10,6 +10,7 @@ const jsonHeader = header('Content-Type', 'application/json');;
 // answers to any request
 server({ security: { csrf: false } }, [
     get('/', ctx => jsonHeader, ctx => process.env.ENV_TEST),
+    get('/privacy-policy', ctx => render('privacy_policy.html')),
     get('/favicon.ico', ctx => jsonHeader, ctx => 'Hello'),
 
     // device prefs
