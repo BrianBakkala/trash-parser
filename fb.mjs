@@ -346,43 +346,58 @@ export async function getHolidayData(householdId)
             return { success: false, error: "Error getting document." };
         }
 
-        result = { ...calendar.getHolidaysDatabase() };
 
-
-        if (currentHolidays.length > 0)
-        {
-            for (let holidayName of Object.keys(result))
-            {
-                const entry = result[holidayName];
-
-                if (haveCommonElement(entry.datestamps, currentHolidays))
-                {
-                    result[holidayName].is_selected = true;
-                }
-            }
-
-        }
-        resolve({ holidays: [...Object.values(result)] });
+        resolve({ holidays: refreshHolidayArray(currentHolidays) });
         return result;
     });
+}
+
+function getSimplifiedHolidaysArray(holidays)
+{
+    return Object.values(holidays)
+        .filter(x => x.is_selected)
+        .map(x => x.datestamps)
+        .flat(1);
+}
+
+function refreshHolidayArray(currentHolidaysArray)
+{
+    let result = { ...calendar.getHolidaysDatabase() };
+
+
+    if (currentHolidaysArray.length > 0)
+    {
+        for (let holidayName of Object.keys(result))
+        {
+            const entry = result[holidayName];
+
+            if (haveCommonElement(entry.datestamps, currentHolidaysArray))
+            {
+                result[holidayName].is_selected = true;
+            }
+        }
+
+    }
+
+
+    return getSimplifiedHolidaysArray(result);
 }
 
 async function getHolidaysSimple(householdId)
 {
     const data = await getHolidayData(householdId);
 
-    return Object.values(data.holidays)
-        .filter(x => x.is_selected)
-        .map(x => x.datestamps)
-        .flat(1);
+    console.log("!");
+    console.log(data);
+    console.log("!");
+
+    return getSimplifiedHolidaysArray(data.holidays);
+
 }
 
 export async function saveHolidayData(householdId, holidayNames)
 {
-    const newDatestamps = Object.values(calendar.getHolidaysDatabase())
-        .filter(x => holidayNames.includes(x.name))
-        .map(x => x.datestamps)
-        .flat(1);
+    const newDatestamps = getSimplifiedHolidaysArray(calendar.getHolidaysDatabase());
 
     const snap = await getHouseholdDocument(householdId);
     await snap.update({ holidays: newDatestamps });
@@ -617,7 +632,9 @@ export async function generateTrashRecycleDays(householdId)
                 });
 
                 //refresh holidays across multiple years using data just updated above
-                const updatedHolidays = await getHolidaysSimple(data.household_id);
+                const updatedHolidays = refreshHolidayArray(hometownDB.holidays);
+
+                console.log(updatedHolidays);
                 batch.set(doc.ref, { holidays: updatedHolidays }, { merge: true });
 
 
