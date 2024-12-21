@@ -799,9 +799,13 @@ export async function whoAmI(photonData)
     } catch (error)
     {
         //proper photon with photon_id is not in DB, find provisioning photon instead
+        console.log("#", "Photon not found, create new instead. --", photon_id);
+
     }
 
     const bindicatorDoc = await getBindicatorDocument({ verification_key });
+    
+
     const doc = await bindicatorDoc.get();
     const data = doc.data();
 
