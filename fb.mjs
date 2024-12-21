@@ -752,7 +752,8 @@ export async function checkSchedule(householdId, resetButtonStates = false)
         await batch.commit();
 
         console.log("#", "Schedule checked.");
-        return { result };
+        resolve({});
+        return {};
     });
 }
 
