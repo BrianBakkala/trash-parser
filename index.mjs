@@ -140,6 +140,33 @@ server({ security: { csrf: false } }, [
     ),
 
 
+    //buttons
+
+    post('/hooks/set-button-state', ctx => jsonHeader,
+        async function (ctx)
+        {
+            return await checkAuth(ctx,
+                async function (ctx)
+                {
+                    const { category, value } = JSON.parse(atob(ctx.data.data));
+                    return await fb.setButtonState({ photon_id: ctx.data.coreid }, category, value);
+                });
+        }
+    ),
+
+
+    post('/hooks/get-button-states', ctx => jsonHeader,
+        async function (ctx)
+        {
+            return await checkAuth(ctx,
+                async function (ctx)
+                {
+                    return await fb.getButtonStates({ photon_id: ctx.data.coreid });
+                });
+        }
+    ),
+
+
     //test
     get('/hooks/override/:category/:value', ctx => jsonHeader, async ctx => await fb.setButtonStatesForAllBindicators(ctx.params.category, ctx.params.value)),
 
@@ -176,7 +203,7 @@ async function checkAuth(ctx, callback)
     if (headerAPIKey1 != apiAuth.api_key_1 || headerAPIKey2 != apiAuth.api_key_2)
     {
         console.error("API key mismatch.");
-        return { success: false, error: data.error, result: { ...data } };
+        return { success: false, error: "API key mismatch.", result: {} };
     }
 
     const data = await callback(ctx);

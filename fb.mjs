@@ -148,7 +148,7 @@ export async function createBindicator(docReference, photon_id)
             {
                 provisioning_status: false,
 
-                bindicator_name: "My BBBBB",
+                bindicator_name: "My Bindicator",
 
                 photon_id,
 
@@ -275,31 +275,35 @@ export async function saveSettings(settingsData, numResults = 5)
 
         //save settings
 
-        getHouseholdDocument(householdId)
-            .then((snap) =>
-            {
-                return snap.get(); // Get the document snapshot
-            })
-            .then((doc) =>
-            {
-                // Update the document directly using doc.ref
-                return doc.ref.update({
-                    trash_schedule: settingsData.trash_day,
-                    recycle_schedule: settingsData.recycle_day,
-                    trash_scheme,
-                    recycle_scheme,
-                    recycle_days: recycleDaysRaw,
-                    trash_days: trashDaysRaw
+        if (!settingsData.wife)
+        {
+
+            getHouseholdDocument(householdId)
+                .then((snap) =>
+                {
+                    return snap.get(); // Get the document snapshot
+                })
+                .then((doc) =>
+                {
+                    // Update the document directly using doc.ref
+                    return doc.ref.update({
+                        trash_schedule: settingsData.trash_day,
+                        recycle_schedule: settingsData.recycle_day,
+                        trash_scheme,
+                        recycle_scheme,
+                        recycle_days: recycleDaysRaw,
+                        trash_days: trashDaysRaw
+                    });
+                })
+                .then(() => checkSchedule(householdId, true))
+                .catch((error) =>
+                {
+                    console.error("Error updating household document:", error);
                 });
-            })
-            .then(() => checkSchedule(householdId, true))
-            .catch((error) =>
-            {
-                console.error("Error updating household document:", error);
-            });
 
 
-        console.log("#", "Settings saved.");
+            console.log("#", "Settings saved.");
+        }
 
         //return preview days for app
         const trash_days = getFormattedDays(trashDaysRaw, numResults);
@@ -318,7 +322,7 @@ export async function getHolidayData(householdId)
     return new Promise(async (resolve, reject) =>
     {
         let result;
-        let currentHolidays = [];
+        let currentHolidays = {};
 
         try
         {
@@ -327,14 +331,7 @@ export async function getHolidayData(householdId)
                 const householdDoc = await snap.get();
                 const hhData = householdDoc.data();
 
-                if (!hhData.holidays)
-                {
-                    return [];
-                }
-                else
-                {
-                    return { holidays: hhData.holidays, wife: hhData.wife };
-                }
+                return { holidays: (!hhData.holidays ? [] : hhData.holidays), wife: hhData.wife };
 
             });
 
@@ -346,8 +343,9 @@ export async function getHolidayData(householdId)
             return { success: false, error: "Error getting document." };
         }
 
+        const refreshed = refreshHolidayArray(currentHolidays.holidays, false);
 
-        resolve({ holidays: refreshHolidayArray(currentHolidays) });
+        resolve({ wife: currentHolidays.wife, holidays: [...Object.values(refreshed)] });
         return result;
     });
 }
@@ -360,10 +358,9 @@ function getSimplifiedHolidaysArray(holidays)
         .flat(1);
 }
 
-function refreshHolidayArray(currentHolidaysArray)
+function refreshHolidayArray(currentHolidaysArray, simple = true)
 {
     let result = { ...calendar.getHolidaysDatabase() };
-
 
     if (currentHolidaysArray.length > 0)
     {
@@ -376,23 +373,15 @@ function refreshHolidayArray(currentHolidaysArray)
                 result[holidayName].is_selected = true;
             }
         }
-
     }
 
-
-    return getSimplifiedHolidaysArray(result);
+    return simple ? getSimplifiedHolidaysArray(result) : result;
 }
 
 async function getHolidaysSimple(householdId)
 {
     const data = await getHolidayData(householdId);
-
-    console.log("!");
-    console.log(data);
-    console.log("!");
-
     return getSimplifiedHolidaysArray(data.holidays);
-
 }
 
 export async function saveHolidayData(householdId, holidayNames)
@@ -412,7 +401,6 @@ export async function saveHolidayData(householdId, holidayNames)
 ///BUTTON STATES
 export async function getBindicatorData(identificationKeyObj)
 {
-    console.log(identificationKeyObj);
     try
     {
         const doc = await getBindicatorDocument(identificationKeyObj);
@@ -453,17 +441,25 @@ export async function updateBindicatorData(dataObj)
     try
     {
         const batch = db.batch();
-        for (const [key, value] of Object.entries(dataObj))
-        {
-            if (buttonStateKeys.includes(key))
+        await bDocRef.get()
+            .then((doc) =>
             {
-                let category = key.split("_on")[0];
-                papi.publishParticleEvent("button_state_changed", { ...identificationKeyObj, category, value });
-            }
+                const docData = doc.data();
 
-            batch.update(bDocRef, { [key]: value });
+                for (const [key, value] of Object.entries(dataObj))
+                {
+                    if (buttonStateKeys.includes(key))
+                    {
+                        let category = key.split("_on")[0];
+                        const household_id = doc.data().household_id;
 
-        }
+                        publishButtonPressEvent(household_id, category, value, { ...doc.data(), ...identificationKeyObj });
+                    }
+
+                    batch.update(bDocRef, { [key]: value });
+
+                }
+            });
         await batch.commit(); //commit all updates at once
 
     } catch (error)
@@ -492,6 +488,25 @@ export async function getButtonState(identificationKeyObj, category)
             );
     });
 }
+export async function getButtonStates(identificationKeyObj)
+{
+    const docRef = await getBindicatorDocument(identificationKeyObj);
+
+    return await new Promise(async (resolve, reject) =>
+    {
+        return await docRef.get()
+            .then(
+                (doc) =>
+                {
+                    const data = doc.data();
+                    const result = { trash_on: data.trash_on, recycle_on: data.recycle_on };
+                    console.log(result);
+                    resolve(result);
+                    return result;
+                }
+            );
+    });
+}
 
 export async function setButtonState(identificationKeyObj, category, value = null)
 {
@@ -514,10 +529,17 @@ export async function setButtonState(identificationKeyObj, category, value = nul
 
         updateValuePromise.then((resolvedValue) =>
         {
+            docRef.get()
+                .then((doc) =>
+                {
+                    const household_id = doc.data().household_id;
+                    publishButtonPressEvent(household_id, category, value, { ...doc.data(), ...identificationKeyObj });
+                });
+
             docRef.update({ [category + '_on']: resolvedValue })
                 .then(() =>
                 {
-                    papi.publishParticleEvent("button_state_changed", { ...identificationKeyObj, category, value: resolvedValue });
+
                     resolve();
                 });
         });
@@ -578,6 +600,15 @@ async function setButtonStatesForAllBindicators(category, value = null)
     });
 }
 
+async function publishButtonPressEvent(household_id, category, value, relevantData = {})
+{
+    papi.publishParticleEvent("button_state_changed/" + household_id, {
+
+        ...getMaximumIdentifier({ ...relevantData }),
+        household_id, category, value
+    });
+}
+
 
 
 ///SCHEDULE
@@ -634,7 +665,6 @@ export async function generateTrashRecycleDays(householdId)
                 //refresh holidays across multiple years using data just updated above
                 const updatedHolidays = refreshHolidayArray(hometownDB.holidays);
 
-                console.log(updatedHolidays);
                 batch.set(doc.ref, { holidays: updatedHolidays }, { merge: true });
 
 
@@ -652,7 +682,7 @@ export async function generateTrashRecycleDays(householdId)
 
         // Commit the batch
         await batch.commit();
-        console.log("Trash and recycle days generated.");
+        console.log("#", "Trash and recycle days generated.");
     } catch (error)
     {
         console.error("Error generating trash and recycle days:", error);
@@ -722,9 +752,7 @@ export async function checkSchedule(householdId, resetButtonStates = false)
         await batch.commit();
 
         console.log("#", "Schedule checked.");
-        // return { result };
-        resolve({});
-        return {};
+        return { result };
     });
 }
 
@@ -880,4 +908,16 @@ function getBiweeklyScheme(thisNextInput)
     }
 
     return "second";
+}
+
+function getMaximumIdentifier(jsonObject)
+{
+    return Object.keys(jsonObject)
+        .filter(key => IDENTIFICATION_KEYS.includes(key))
+        .reduce((filteredObj, key) =>
+        {
+            filteredObj[key] = jsonObject[key];
+            return filteredObj;
+        }, {});
+
 }
