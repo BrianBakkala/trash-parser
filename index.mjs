@@ -27,7 +27,7 @@ server({ security: { csrf: false } }, [
                         obj = { photon_id: ctx.data.coreid };
                     }
 
-                    console.log(obj);
+                    // console.log(obj);
 
                     return await fb.getBindicatorData(obj);
                 });
@@ -108,11 +108,20 @@ server({ security: { csrf: false } }, [
     post('/hooks/check-schedule', ctx => jsonHeader,
         async function (ctx)
         {
+            let isSimple = (ctx.headers['Simple-Response'] || ctx.headers['simple-response']) ?? false;
+
             return await checkAuth(ctx,
                 async function (ctx)
                 {
-                    return await fb.checkSchedule();
+                    return await fb.checkSchedule(isSimple);
                 });
+        }
+    ),
+    //cronjob?
+    get('/hooks/check-schedule', ctx => jsonHeader,
+        async function (ctx)
+        {
+            return await fb.checkSchedule();
         }
     ),
 
@@ -167,8 +176,9 @@ server({ security: { csrf: false } }, [
     ),
 
 
+
     //test
-    get('/hooks/override/:category/:value', ctx => jsonHeader, async ctx => await fb.setButtonStatesForAllBindicators(ctx.params.category, ctx.params.value)),
+    get('/hooks/override/:category/:value', ctx => jsonHeader, async ctx => await fb.setButtonStatesForAllBindicators(ctx.params.category, JSON.parse(ctx.params.value))),
 
 ]);
 

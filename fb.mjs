@@ -21,8 +21,24 @@ async function intializeFirebase()
     await admin.initializeApp({
         credential: admin.credential.cert(serviceAccount),
     });
-    return await admin.firestore();
+
+    const instance = await admin.firestore();
+    if (!!instance)
+    {
+        console.log("#", "Login to Firebase successful.");
+        return instance;
+    }
+    console.error("#", "Login to Firebase failed.");
+
+
 }
+
+var particleToken = await papi.particleAuth(); //particle connection
+
+
+
+
+
 ///PROVISIONING/ONBOARDING 
 
 /**
@@ -80,6 +96,32 @@ export async function getHouseholdDocument(householdId, forceNewDoc = false)
     }
 
     throw new Error('No matching document found or multiple matches for key.');
+}
+
+async function getAllHouseholdIds()
+{
+    try
+    {
+        const uniqueHouseholdIds = new Set();
+
+        const householdsSnapshot = await db.collection('households').get();
+
+        householdsSnapshot.forEach(doc =>
+        {
+            const householdId = doc.data().household_id;
+            if (householdId)
+            {
+                uniqueHouseholdIds.add(householdId);
+            }
+        });
+
+        const uniqueHouseholdIdList = Array.from(uniqueHouseholdIds);
+
+        return uniqueHouseholdIdList;
+    } catch (error)
+    {
+        console.error('Error getting unique household IDs:', error);
+    }
 }
 
 
@@ -295,7 +337,7 @@ export async function saveSettings(settingsData, numResults = 5)
                         trash_days: trashDaysRaw
                     });
                 })
-                .then(() => checkSchedule(householdId, true))
+                .then(() => checkSchedule(false, householdId, true))
                 .catch((error) =>
                 {
                     console.error("Error updating household document:", error);
@@ -500,7 +542,7 @@ export async function getButtonStates(identificationKeyObj)
                 {
                     const data = doc.data();
                     const result = { trash_on: data.trash_on, recycle_on: data.recycle_on };
-                    console.log(result);
+                    // console.log(result);
                     resolve(result);
                     return result;
                 }
@@ -539,7 +581,6 @@ export async function setButtonState(identificationKeyObj, category, value = nul
             docRef.update({ [category + '_on']: resolvedValue })
                 .then(() =>
                 {
-
                     resolve();
                 });
         });
@@ -557,12 +598,16 @@ async function setButtonStatesForDocumentGroup(docGroup, category, value)
 
             docGroup.forEach((doc) =>
             {
+                const docData = doc.data();
+
                 if (value == null)
                 {
-                    value = !doc.data()[category + '_on'];
+                    value = !docData()[category + '_on'];
                 }
 
                 batch.update(doc.ref, { [category + '_on']: value });
+
+                //publish particle event outside scope
             });
 
             // Commit the batch  
@@ -582,31 +627,61 @@ async function setHouseholdButtonStates(household, category, value = null)
 
             category,
             value
-        ).then(() => resolve());
+        ).then(() =>
+        {
+            publishButtonPressEvent(household, category, value);
+            resolve();
+        });
     });
 }
 
-async function setButtonStatesForAllBindicators(category, value = null) 
+export async function setButtonStatesForAllBindicators(category, value = null)
 {
-    return new Promise(async (resolve, reject) =>
-    {
-        setButtonStatesForDocumentGroup(
+    const householdIDs = await getAllHouseholdIds();
+    const hhPromises = householdIDs.map(hhid =>
+        setHouseholdButtonStates(hhid, category, value)
+    );
 
-            await db.collection('bindicators').get(),
-
-            category,
-            value
-        ).then(() => resolve());
-    });
+    //wait for all the promises to resolve
+    await Promise.all(hhPromises);
 }
 
 async function publishButtonPressEvent(household_id, category, value, relevantData = {})
 {
-    papi.publishParticleEvent("button_state_changed/" + household_id, {
+    const procedure = (token) =>
+    {
+        papi.publishParticleEvent(token,
 
-        ...getMaximumIdentifier({ ...relevantData }),
-        household_id, category, value
-    });
+            "button_state_changed/" + household_id,
+
+            {
+                ...getMaximumIdentifier({ ...relevantData }),
+                household_id, category, value
+            }
+        );
+    };
+
+    try
+    {
+        procedure(particleToken);
+    } catch (error)
+    {
+        console.log("#", "API request failed:" + error);
+
+        try
+        {
+            console.log("#", "Refreshing token.");
+            const newToken = await papi.particleAuth(true);
+            particleToken = newToken;
+
+            procedure(newToken);
+
+        } catch (error)
+        {
+            console.log("#", "API request double failed:" + error);
+        }
+    }
+
 }
 
 
@@ -697,7 +772,7 @@ export async function generateTrashRecycleDays(householdId)
  * @param {*} bindicatorPhotonId
  * @return {*} 
  */
-export async function checkSchedule(householdId, resetButtonStates = false)
+export async function checkSchedule(simpleResponse, householdId, resetButtonStates = false)
 {
     let result = [];
     const d = new Date();
@@ -710,50 +785,50 @@ export async function checkSchedule(householdId, resetButtonStates = false)
 
     if (!householdId)
     {
-        docGroup = await db.collection('bindicators').get();
+        docGroup = await db.collection('households').get();
     }
     else
     {
-        docGroup = await db.collection('bindicators').where('household_id', '==', householdId).get();
+        docGroup = await db.collection('households').where('household_id', '==', householdId).get();
     }
 
     return await new Promise(async (resolve, reject) =>
     {
-        const batch = db.batch();
 
         docGroup.forEach((doc) =>
         {
             const data = doc.data();
 
+            //in case no hhid was specified, get hhid from individual doc
+            householdId = householdId ? householdId : data.household_id;
+
             if (lightShouldTurnOn(data.trash_days, todayDateString, tomorrowDateString))
             {
                 result.push({ householdId, trash_on: true });
-                batch.update(doc.ref, { trash_on: true });
+                setHouseholdButtonStates(householdId, "trash", true);
             }
             if (lightShouldTurnOn(data.recycle_days, todayDateString, tomorrowDateString))
             {
                 result.push({ householdId, recycle_on: true });
-                batch.update(doc.ref, { recycle_on: true });
+                setHouseholdButtonStates(householdId, "recycle", true);
             }
 
             if (resetButtonStates || lightShouldTurnOff(data.trash_days, todayDateString, tomorrowDateString))
             {
                 result.push({ householdId, trash_on: false });
-                batch.update(doc.ref, { trash_on: false });
+                setHouseholdButtonStates(householdId, "trash", false);
             }
             if (resetButtonStates || lightShouldTurnOff(data.recycle_days, todayDateString, tomorrowDateString))
             {
                 result.push({ householdId, recycle_on: false });
-                batch.update(doc.ref, { recycle_on: false });
+                setHouseholdButtonStates(householdId, "recycle", false);
             }
 
         });
 
-        await batch.commit();
-
         console.log("#", "Schedule checked.");
-        resolve({});
-        return {};
+        resolve({ result });
+        return { result };
     });
 }
 
@@ -804,7 +879,7 @@ export async function whoAmI(photonData)
     }
 
     const bindicatorDoc = await getBindicatorDocument({ verification_key });
-    
+
 
     const doc = await bindicatorDoc.get();
     const data = doc.data();
