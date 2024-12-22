@@ -766,7 +766,7 @@ export async function generateTrashRecycleDays(householdId)
 
 
 /**
- * Optimally cronjobbed to run at noon every day
+ * Optimally cronjobbed to run at noon? every day
  *
  * @export
  * @param {*} bindicatorPhotonId
@@ -780,6 +780,8 @@ export async function checkSchedule(simpleResponse, householdId, resetButtonStat
 
     const todayDateString = d.toLocaleDateString('en-CA');
     const tomorrowDateString = tomorrow.toLocaleDateString('en-CA');
+
+
 
     let docGroup;
 
@@ -798,6 +800,7 @@ export async function checkSchedule(simpleResponse, householdId, resetButtonStat
         docGroup.forEach((doc) =>
         {
             const data = doc.data();
+
 
             //in case no hhid was specified, get hhid from individual doc
             householdId = householdId ? householdId : data.household_id;
@@ -827,8 +830,12 @@ export async function checkSchedule(simpleResponse, householdId, resetButtonStat
         });
 
         console.log("#", "Schedule checked.");
-        resolve({ result });
-        return { result };
+
+
+        const response = simpleResponse ? {} : { result };
+
+        resolve(response);
+        return response;
     });
 }
 
@@ -930,17 +937,27 @@ function haveCommonElement(array1, array2)
     return array2.some(element => set1.has(element));
 }
 
+function getEasternTime()
+{
+    // Get the current time and convert to US Eastern Time
+    const now = new Date();
+    const easternTime = new Intl.DateTimeFormat('en-US', {
+        timeZone: 'America/New_York',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+    }).format(now);
+
+    const [currentHours, currentMinutes] = easternTime.split(":").map(Number);
+    return { currentHours, currentMinutes };
+}
+
 function isBefore(time)
 {
-    // Get the current time
-    const now = new Date();
-    const currentHours = now.getHours();
-    const currentMinutes = now.getMinutes();
-
-    // Parse the input time
+    const { currentHours, currentMinutes } = getEasternTime();
     const [inputHours, inputMinutes] = time.split(":").map(Number);
 
-    // Compare current time with the input time
     if (currentHours < inputHours || (currentHours === inputHours && currentMinutes < inputMinutes))
     {
         return true;
@@ -950,15 +967,9 @@ function isBefore(time)
 
 function isAfter(time)
 {
-    // Get the current time
-    const now = new Date();
-    const currentHours = now.getHours();
-    const currentMinutes = now.getMinutes();
-
-    // Parse the input time
+    const { currentHours, currentMinutes } = getEasternTime();
     const [inputHours, inputMinutes] = time.split(":").map(Number);
 
-    // Compare current time with the input time
     if (currentHours > inputHours || (currentHours === inputHours && currentMinutes > inputMinutes))
     {
         return true;

@@ -104,7 +104,11 @@ server({ security: { csrf: false } }, [
         }
     ),
 
-    //cronjob?
+    // check schedule
+    // 
+    // cronjob
+    // https://console.cron-job.org/jobs/5646139
+
     post('/hooks/check-schedule', ctx => jsonHeader,
         async function (ctx)
         {
@@ -117,15 +121,8 @@ server({ security: { csrf: false } }, [
                 });
         }
     ),
-    //cronjob?
-    get('/hooks/check-schedule', ctx => jsonHeader,
-        async function (ctx)
-        {
-            return await fb.checkSchedule();
-        }
-    ),
 
-    //provisioning
+    // provisioning
     post('/hooks/post-provision', ctx => jsonHeader,
         async function (ctx)
         {
@@ -149,7 +146,7 @@ server({ security: { csrf: false } }, [
     ),
 
 
-    //buttons
+    // buttons
 
     post('/hooks/set-button-state', ctx => jsonHeader,
         async function (ctx)
@@ -175,10 +172,8 @@ server({ security: { csrf: false } }, [
         }
     ),
 
-
-
-    //test
-    get('/hooks/override/:category/:value', ctx => jsonHeader, async ctx => await fb.setButtonStatesForAllBindicators(ctx.params.category, JSON.parse(ctx.params.value))),
+    // test
+    // get('/hooks/override/:category/:value', ctx => jsonHeader, async ctx => await fb.setButtonStatesForAllBindicators(ctx.params.category, JSON.parse(ctx.params.value))),
 
 ]);
 
