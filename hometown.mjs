@@ -53,7 +53,7 @@ export async function display(dowLetter = null)
         function (items, table)
         {
             return {
-                ...parsing.getTrashRecyclingDays(table,
+                ...parsing.getHometownTrashRecyclingDays(table,
                     dayOfWeekData.day_of_week_number,
                     "biweekly second",
                     parsing.getLikelyYear(table))

@@ -76,7 +76,7 @@ export function naturalDate(datestamp, abbrev = false)
     return (abbrev ? m.slice(0, 3) : m) + " " + +day;
 }
 
-export function getHolidaysDatabase(year = 2024)
+export function getHolidaysDatabase(year = 2025)
 {
     let db = {};
     try

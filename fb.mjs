@@ -141,6 +141,9 @@ export async function addProvisioningBindicator(verification_key, household_id)
                 monitoring_uuid,
                 verification_key,
                 provisioning_status: true,
+
+                trash_on: false,
+                recycle_on: false,
             }, { merge: true });
 
             const hDocRef = await getHouseholdDocument(household_id, true);

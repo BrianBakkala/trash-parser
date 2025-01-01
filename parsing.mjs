@@ -1,4 +1,4 @@
-// const static_lines = [["2024 hometown Trash/Recycling Calendar"], ["January", "February", "March"], ["S", "M", "T", "W", "T", "F", "S", "S", "M", "T", "W", "T", "F", "S", "S", "M", "T", "W", "T", "F", "S"], ["T", "2", "3", "4", "5", "6", "1", "2", "3", "1", "2"], ["7", "8", "9", "10", "11", "12", "13", "4", "5", "6", "7", "8", "9", "10", "3", "4", "5", "6", "7", "8", "9"], ["14", "15", "16", "17", "18", "19", "20", "11", "12", "13", "14", "15", "16", "17", "10", "11", "12", "13", "14", "15", "16"], ["21", "22", "23", "24", "25", "26", "27", "18", "19", "20", "21", "22", "23", "24", "17", "18", "19", "20", "21", "22", "23"], ["28", "29", "30", "31", "25", "26", "27", "28", "29", "24", "25", "26", "27", "28", "29", "30"], ["31"], ["April", "May", "June"], ["S", "M", "T", "W", "T", "F", "S", "S", "M", "T", "W", "T", "F", "S", "S", "M", "T", "W", "T", "F", "S"], ["1", "2", "3", "4", "5", "6", "1", "2", "3", "4", "1"], ["7", "8", "9", "10", "11", "12", "13", "5", "6", "7", "8", "9", "10", "11", "2", "3", "4", "5", "6", "7", "8"],
+// const static_lines = [["2025 hometown Trash/Recycling Calendar"], ["January", "February", "March"], ["S", "M", "T", "W", "T", "F", "S", "S", "M", "T", "W", "T", "F", "S", "S", "M", "T", "W", "T", "F", "S"], ["T", "2", "3", "4", "5", "6", "1", "2", "3", "1", "2"], ["7", "8", "9", "10", "11", "12", "13", "4", "5", "6", "7", "8", "9", "10", "3", "4", "5", "6", "7", "8", "9"], ["14", "15", "16", "17", "18", "19", "20", "11", "12", "13", "14", "15", "16", "17", "10", "11", "12", "13", "14", "15", "16"], ["21", "22", "23", "24", "25", "26", "27", "18", "19", "20", "21", "22", "23", "24", "17", "18", "19", "20", "21", "22", "23"], ["28", "29", "30", "31", "25", "26", "27", "28", "29", "24", "25", "26", "27", "28", "29", "30"], ["31"], ["April", "May", "June"], ["S", "M", "T", "W", "T", "F", "S", "S", "M", "T", "W", "T", "F", "S", "S", "M", "T", "W", "T", "F", "S"], ["1", "2", "3", "4", "5", "6", "1", "2", "3", "4", "1"], ["7", "8", "9", "10", "11", "12", "13", "5", "6", "7", "8", "9", "10", "11", "2", "3", "4", "5", "6", "7", "8"],
 // ["14", "15", "16", "17", "18", "19", "20", "12", "13", "14", "15", "16", "17", "18", "9", "10", "11", "12", "13", "14", "15"], ["21", "22", "23", "24", "25", "26", "27", "19", "20", "21", "22", "23", "24", "25", "16", "17", "18", "19", "20", "21", "22"], ["28", "29", "30", "26", "T", "28", "29", "30", "31", "23", "24", "25", "26", "27", "28", "29"], ["30"], ["July", "August", "September"], ["S", "M", "T", "W", "T", "F", "S", "S", "M", "T", "W", "T", "F", "S", "S", "M", "T", "W", "T", "F", "S"], ["1", "2"], ["3", "T", "5", "6", "1", "2", "3", "1", "T", "3", "4", "5", "6", "7"], ["7", "8", "9", "10", "11", "12", "13", "4", "5", "6", "7", "8", "9", "10", "8", "9", "10", "11", "12", "13", "14"], ["14", "15", "16", "17", "18", "19", "20", "11", "12", "13", "14", "15", "16", "17", "15", "16", "17", "18", "19", "20", "21"], ["21", "22", "23", "24", "25", "26", "27", "18", "19", "20", "21", "22", "23", "24", "22", "23", "24", "25", "26", "27", "28"], ["28", "29", "30", "31", "25", "26", "27", "28", "29", "30", "31", "29", "30"], ["October", "November", "December"], ["S", "M", "T", "W", "T", "F", "S", "S", "M", "T", "W", "T", "F", "S", "S", "M", "T", "W", "T", "F", "S"], ["1", "2", "3", "4", "5", "1", "2", "1", "2", "3", "4", "5", "6", "7"], ["6", "7", "8", "9", "10", "11", "12", "3", "4", "5", "6", "7", "8", "9", "8", "9", "10", "11", "12", "13", "14"], ["13", "14", "15", "16", "17", "18", "19", "10", "11", "12", "13", "14", "15", "16", "15", "16", "17", "18", "19", "20", "21"], ["20", "21", "22", "23", "24", "25", "26", "17", "18", "19", "20", "21", "22", "23", "22", "23", "24", "T", "26", "27", "28"], ["27", "29", "29", "30", "31", "24", "25", "26", "27", "T", "29", "30", "29", "30", "31"], ["RECYCLING WEEKS ARE SHOWN IN GREEN"], ["All trash/recycling pickups will be moved forward ONE day due to the holiday. "]  
 
 
@@ -7,12 +7,13 @@
  *
  * @param {array} lines string arrays of each line of the PDF
  * @param {number} dayOfWeekIndex trash day 0-6
- * @param {number} [year=2024]
+ * @param {number} [year=2025]
  * @return {obj} data representing the trash and recycling days 
  */
-export function getTrashRecyclingDays(lines, dayOfWeekIndex, recycleScheme = "biweekly second", year = 2024)
+export function getHometownTrashRecyclingDays(lines, dayOfWeekIndex, recycleScheme = "biweekly second", year = 2025)
 {
     const holidays = getHolidays(lines);
+
     let trashDays = [];
     let recyclingDays = [];
 
@@ -99,12 +100,14 @@ export function getTrashRecyclingDays(lines, dayOfWeekIndex, recycleScheme = "bi
  * Takes a 
  *
  * @param {array} lines string arrays of each line of the PDF
- * @param {number} [year=2024] year to look for
+ * @param {number} [year=2025] year to look for
  * @return {array} array of dates, representing the holidays 
  */
-function getHolidays(lines, year = 2024)
+function getHolidays(lines, year = 2025)
 {
     const months = getMonths(lines);
+
+    // console.log(months);
     let holidays = [];
 
     for (let monthIndex in months)
@@ -173,7 +176,7 @@ function getMonths(linesArray)
 
     for (let lineIndex = 0; lineIndex < linesArray.length; lineIndex++)
     {
-        const line = linesArray[lineIndex];
+        const line = linesArray[lineIndex].filter(x => x);
         const nature = determineLineNature(line);
 
         if (nature == "title" || nature == "day_headers")
@@ -183,57 +186,59 @@ function getMonths(linesArray)
         else if (nature == "month_headers")
         {
             bigRowCounter += 1;
-
-            for (let monthIndex in line)
-            {
-                result[bigRowCounter * NUM_MONTH_COLUMNS + +monthIndex] = [];
-            }
-
         }
         else if (nature == "dates")
         {
             let rowMonthIndex = 0;
             let weekCount = 0;
 
-            if (line.length == 1)
-            {
-                for (let i = 0; i < NUM_MONTH_COLUMNS; i += 1)
-                {
-                    const possibleMonth = result[bigRowCounter * NUM_MONTH_COLUMNS + i];
-                    const lastDay = possibleMonth[possibleMonth.length - 1];
-                    const unattachedDay = line[0];
 
-                    if (+lastDay + 1 == +unattachedDay)
-                    {
-                        result[bigRowCounter * NUM_MONTH_COLUMNS + i].push(unattachedDay);
-                    }
+            for (let dateIndex in line)
+            {
+                const prevDate = line[+dateIndex - 1] ? line[+dateIndex - 1] : null;
+                const dateNum = line[dateIndex];
+                const nextDate = line[+dateIndex + 1] ? line[+dateIndex + 1] : null;
+
+                let modifiedDateNum = dateNum;
+
+                if (dateNum == "T")
+                {
+                    modifiedDateNum = +nextDate - 1;
+
                 }
-            }
-            else
-            {
-                for (let dateIndex in line)
+
+
+                const offset = bigRowCounter * NUM_MONTH_COLUMNS;
+
+                const possibleMonth = result[offset + rowMonthIndex];
+
+                if (possibleMonth)
                 {
-                    const dateNum = line[dateIndex];
-                    const nextDate = line[+dateIndex + 1] ? line[+dateIndex + 1] : null;
-                    const prevDate = line[+dateIndex - 1] ? line[+dateIndex - 1] : null;
-
-                    const offset = bigRowCounter * NUM_MONTH_COLUMNS;
-
-                    result[offset + rowMonthIndex].push(dateNum);
-
-                    if (+nextDate < +dateNum)
+                    const lastDay = possibleMonth[possibleMonth.length - 1] ?? 0;
+                    if (lastDay != "T" && (+lastDay >= modifiedDateNum || +lastDay + 1 != modifiedDateNum))
                     {
-                        weekCount = 0;
-                        rowMonthIndex += 1;
-                    }
-                    else
-                    {
-                        weekCount += 1;
+                        rowMonthIndex++;
+                        dateIndex--; //try the next month                 
                     }
 
                 }
 
+                result[offset + rowMonthIndex] = result[offset + rowMonthIndex] ?? [];
+                result[offset + rowMonthIndex].push(dateNum);
+
+                if (+nextDate <= +modifiedDateNum)
+                {
+                    weekCount = 0;
+                    rowMonthIndex += 1;
+                }
+                else
+                {
+                    weekCount += 1;
+                }
+
             }
+
+
         }
     }
 
