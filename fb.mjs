@@ -651,45 +651,20 @@ export async function setButtonStatesForAllBindicators(category, value = null)
 
 async function publishButtonPressEvent(household_id, category, value, relevantData = {})
 {
-    const procedure = (token) =>
-    {
-        papi.publishParticleEvent(token,
-
-            "button_state_changed/" + household_id,
-
-            {
-                ...getMaximumIdentifier({ ...relevantData }),
-                household_id, category, value
-            }
-        );
-    };
-
-    try
-    {
-        procedure(particleToken);
-    } catch (error)
-    {
-        console.log("#", "API request failed:" + error);
-
-        try
+    publishParticleEvent(
+        "button_state_changed/" + household_id,
         {
-            console.log("#", "Refreshing token.");
-            const newToken = await papi.particleAuth(true);
-            particleToken = newToken;
-
-            procedure(newToken);
-
-        } catch (error)
-        {
-            console.log("#", "API request double failed:" + error);
+            ...getMaximumIdentifier({ ...relevantData }),
+            household_id, category, value
         }
-    }
+    );
 
 }
 
 
 
 ///SCHEDULE
+
 export async function generateTrashRecycleDays(householdId)
 {
     try
@@ -870,6 +845,7 @@ function lightShouldTurnOff(daysArray, todayDate, tomorrowDate)
 
 
 ///AUTH
+
 export async function whoAmI(photonData) 
 {
     //get data from photon
@@ -912,6 +888,53 @@ export async function getAPIAuth()
     const doc = await db.collection('api_auth').doc('auth').get();
     return doc.data();
 }
+
+
+/// PARTICLE EVENTS
+
+async function publishParticleEvent(eventName, eventData)
+{
+    const procedure = (token) =>
+    {
+        papi.publishParticleEvent(token, eventName, eventData);
+    };
+
+    try
+    {
+        procedure(particleToken);
+    }
+    catch (error)
+    {
+        console.log("#", "API request failed:" + error);
+
+        try
+        {
+            console.log("#", "Refreshing token.");
+            const newToken = await papi.particleAuth(true);
+            particleToken = newToken;
+
+            procedure(newToken);
+
+        } catch (error)
+        {
+            console.log("#", "API request double failed:" + error);
+        }
+    }
+}
+
+
+///POWER CYCLE
+
+async function globalPowerCycle()
+{
+    publishParticleEvent(
+        "global-power-cycle",
+        {}
+    );
+
+}
+
+
 
 
 ///UTIL

@@ -9,7 +9,7 @@ const jsonHeader = header('Content-Type', 'application/json');;
 
 // answers to any request
 server({ security: { csrf: false } }, [
-    get('/', ctx => jsonHeader, ctx => process.env.ENV_TEST),
+    get('/', ctx => jsonHeader, ctx => process.env.ENV_TEST + "\n Environment: " + process.env.NODE_ENV),
     get('/privacy-policy', ctx => render('privacy_policy.html')),
     get('/favicon.ico', ctx => jsonHeader, ctx => 'Hello'),
 
@@ -172,13 +172,46 @@ server({ security: { csrf: false } }, [
         }
     ),
 
+    //power cycle
+    post('/hooks/global-power-cycle', ctx => jsonHeader,
+        async function (ctx)
+        {
+            return await checkAuth(ctx,
+                async function (ctx)
+                {
+                    return await fb.globalPowerCycle();
+                });
+        }
+    ),
+
     // test
+    get('/hooks/global-power-cycle', ctx => jsonHeader,
+        async function (ctx)
+        {
+            return await checkAuth(ctx,
+                async function (ctx)
+                {
+                    return await fb.globalPowerCycle();
+                });
+        }
+    ),
     // get('/hooks/override/:category/:value', ctx => jsonHeader, async ctx => await fb.setButtonStatesForAllBindicators(ctx.params.category, JSON.parse(ctx.params.value))),
 
 ]);
 
+function isLocal()
+{
+    return process.env.ENV_TEST === 'dev';
+}
+
+
 async function checkAuth(ctx, callback)
 {
+    if (isLocal())
+    {
+        return true;
+    }
+
     const authHeader = ctx.headers.authorization || ctx.headers.Authorization;
 
     if (!authHeader || !authHeader.startsWith('Basic '))
