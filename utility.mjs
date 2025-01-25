@@ -79,7 +79,12 @@ export async function getPDFfromURL(url, callback)
     });
 
 }
-
+/**
+ * Uses the x and y values of the PDF items to approximate a table
+ *
+ * @param {*} items
+ * @return {*} 
+ */
 function convertPDFItemsToPseudoTable(items)
 {
     let result = [];
@@ -102,4 +107,3 @@ function convertPDFItemsToPseudoTable(items)
 
     return result;
 }
- 

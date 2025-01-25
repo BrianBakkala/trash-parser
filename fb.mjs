@@ -42,7 +42,7 @@ var particleToken = await papi.particleAuth(); //particle connection
 ///PROVISIONING/ONBOARDING 
 
 /**
- * Gets the first Firebase document that matches the property in object that matches IDENTIFICATION_KEYS.
+ * Gets the first FB bindicator document that matches the property in object that matches IDENTIFICATION_KEYS.
  *
  * Example params:
  * {photon_id:"xyz"}
@@ -79,6 +79,14 @@ export async function getBindicatorDocument(obj, forceNewDoc = false)
     throw new Error('No matching document found or multiple matches for key:' + JSON.stringify(obj));
 }
 
+/**
+ * Gets the FB document for the household with the matching hhid.
+ *
+ * @export
+ * @param {string} householdId
+ * @param {boolean} [forceNewDoc=false]
+ * @return {DocumentReference} 
+ */
 export async function getHouseholdDocument(householdId, forceNewDoc = false)
 {
     const collection = db.collection('households');
@@ -98,6 +106,11 @@ export async function getHouseholdDocument(householdId, forceNewDoc = false)
     throw new Error('No matching document found or multiple matches for key.');
 }
 
+/**
+ * gets all unique household ids in the FB
+ *
+ * @return {Array<String>} 
+ */
 async function getAllHouseholdIds()
 {
     try
@@ -124,7 +137,14 @@ async function getAllHouseholdIds()
     }
 }
 
-
+/**
+ * Initializes a bindicator in FB and assumes that the status is that it is currently being provisioned in the app.
+ * 
+ * @export
+ * @param {String} verification_key [see createVerificationKey()]
+ * @param {String} household_id 
+ * @return {Promise<JSON>} a uuid to track and send back to the app for flawless identification. 
+ */
 export async function addProvisioningBindicator(verification_key, household_id)
 {
     return new Promise(async (resolve, reject) =>
@@ -145,6 +165,10 @@ export async function addProvisioningBindicator(verification_key, household_id)
                 trash_on: false,
                 recycle_on: false,
             }, { merge: true });
+
+            console.log("#@");
+            console.log(household_id);
+            console.log("#@");
 
             const hDocRef = await getHouseholdDocument(household_id, true);
 
@@ -167,6 +191,9 @@ export async function addProvisioningBindicator(verification_key, household_id)
 
             }, { merge: true }).then(() => generateTrashRecycleDays(household_id));
 
+
+            console.log("#", "Provisioning bindicator added: ", { monitoring_uuid });
+
             resolve({ monitoring_uuid });
             return { monitoring_uuid };  // Returning a uuid to monitor for an updated photonID
 
@@ -179,7 +206,7 @@ export async function addProvisioningBindicator(verification_key, household_id)
 }
 
 /**
- * Sets up a provisioning Bindicator with the correct new properties.
+ * Sets up a provisioned Bindicator with the correct new properties.
  *
  * @export
  * @param {DocumentReference} docReference
@@ -213,6 +240,15 @@ export async function createBindicator(docReference, photon_id)
 
 }
 
+/**
+ * Probably refactorable and deleteable. TODO: is this the same thing as a promise wrapped
+ * around createBindicator()?
+ *
+ * @export
+ * @param {DocumentReference} bindicatorDoc
+ * @param {String} photonId
+ * @return {Promise} 
+ */
 export async function onboardBindicator(bindicatorDoc, photonId)
 {
     console.log("#", "Onboarding Bindicator...");
@@ -225,6 +261,13 @@ export async function onboardBindicator(bindicatorDoc, photonId)
     });
 }
 
+/**
+ * Get all bindicators in FB with an associated household id
+ *
+ * @export
+ * @param {String} householdId
+ * @return {QuerySnapshot} 
+ */
 export async function getBindicators(householdId)
 {
     try
@@ -251,22 +294,17 @@ export async function getBindicators(householdId)
     }
 }
 
-
+/**
+ * Gets household-wide settings for a particular household.
+ *
+ * @export
+ * @param {String} householdId
+ * @return {JSON} 
+ */
 export async function getGlobalSettings(householdId)
 {
     const snap = await getHouseholdDocument(householdId);
     const householdDoc = await snap.get();
-
-
-    const adjustBiweeklyScheme = (scheme, startOption) =>
-    {
-        if (scheme.startsWith("biweekly"))
-        {
-            const schemeWeek = getBiweeklyScheme(startOption);
-            return 'biweekly ' + schemeWeek;
-        }
-        return scheme;
-    };
 
     return await new Promise(async (resolve, reject) =>
     {
@@ -287,6 +325,14 @@ export async function getGlobalSettings(householdId)
     });
 }
 
+/**
+ * Saves settings (as input into the app) to FB
+ *
+ * @export
+ * @param {JSON} settingsData
+ * @param {number} [numResults=5]
+ * @return {*} 
+ */
 export async function saveSettings(settingsData, numResults = 5)
 {
     return await new Promise(async (resolve, reject) =>
@@ -361,7 +407,13 @@ export async function saveSettings(settingsData, numResults = 5)
     });
 }
 
-
+/**
+ * gets holiday data (including selected holidays) for a household
+ *
+ * @export
+ * @param {String} householdId
+ * @return {JSON} 
+ */
 export async function getHolidayData(householdId)
 {
     return new Promise(async (resolve, reject) =>
@@ -395,6 +447,12 @@ export async function getHolidayData(householdId)
     });
 }
 
+/**
+ * calculates holiday date strings, with no extra data
+ *
+ * @param {JSON} holidays
+ * @return {Array<String>} 
+ */
 function getSimplifiedHolidaysArray(holidays)
 {
     return Object.values(holidays)
@@ -403,6 +461,13 @@ function getSimplifiedHolidaysArray(holidays)
         .flat(1);
 }
 
+/**
+ * Double checks dates, and adds next year's holidays, for perpetuity.
+ *
+ * @param {*} currentHolidaysArray
+ * @param {boolean} [simple=true]
+ * @return {Array<String>} 
+ */
 function refreshHolidayArray(currentHolidaysArray, simple = true)
 {
     let result = { ...calendar.getHolidaysDatabase() };
@@ -423,13 +488,25 @@ function refreshHolidayArray(currentHolidaysArray, simple = true)
     return simple ? getSimplifiedHolidaysArray(result) : result;
 }
 
+/**
+ * Gets just the date strings of the selected holidays for a household
+ *
+ * @param {String} householdId
+ * @return {*} 
+ */
 async function getHolidaysSimple(householdId)
 {
     const data = await getHolidayData(householdId);
     return getSimplifiedHolidaysArray(data.holidays);
 }
 
-export async function saveHolidayData(householdId, holidayNames)
+/**
+ * saves holidays to FB, identified by their names
+ *
+ * @export
+ * @param {String} householdId
+ */
+export async function saveHolidayData(householdId)
 {
     const newDatestamps = getSimplifiedHolidaysArray(calendar.getHolidaysDatabase());
 
@@ -925,12 +1002,14 @@ async function publishParticleEvent(eventName, eventData)
 
 ///POWER CYCLE
 
-async function globalPowerCycle()
+export async function globalPowerCycle()
 {
     publishParticleEvent(
         "global-power-cycle",
         {}
     );
+
+    return { message: "Power cycle executed." };
 
 }
 
@@ -938,17 +1017,40 @@ async function globalPowerCycle()
 
 
 ///UTIL
-
+/**
+ * Gets a uuid.
+ *
+ * @return {String} uuid string 
+ */
 function uuid()
 {
     return crypto.randomUUID();
 }
 
+/**
+ * Creates a string value using as seeds two pieces of identifying information: 
+ * the last 6 digits of the photon device id, and the name of the network. 
+ * If these two things are the same with two currently-being-provisioned bindicators,
+ * then we have a problem. For now, the odds of those two things being the same are 
+ * very very very low
+ * for CURRENTLY-BEING-PROVISIONED bindicators. We're going to risk it with our userbase
+ * less than 10 people.
+ *
+ * @param {String} ssid
+ * @param {String} setupCode
+ * @return {String} the verification key 
+ */
 function createVerificationKey(ssid, setupCode)
 {
     return btoa(btoa(setupCode.toLowerCase()) + VERIFICATION_KEY_DELIMITER + btoa(ssid));
 }
 
+/**
+ *Parses the verification key. See [createVerificationKey()]
+ *
+ * @param {*} verificationKey
+ * @return {JSON} object containing the two parts, the ssid and the setup code 
+ */
 function parseVerificationKey(verificationKey)
 {
     const [setup_code, ssid] = atob(verificationKey).split(VERIFICATION_KEY_DELIMITER)
@@ -957,12 +1059,25 @@ function parseVerificationKey(verificationKey)
     return { ssid, setup_code };
 }
 
+/**
+ * Returns true if two arrays have a common element, false otherwise.
+ *
+ * @param {Array} array1
+ * @param {Array} array2
+ * @return {boolean} 
+ */
 function haveCommonElement(array1, array2)
 {
     const set1 = new Set(array1);
     return array2.some(element => set1.has(element));
 }
 
+/**
+ * Gets current time in US East TZ. 
+ * All users are currently in US East.
+ *
+ * @return {JSON} object with current hours and current minutes 
+ */
 function getEasternTime()
 {
     // Get the current time and convert to US Eastern Time
@@ -979,6 +1094,12 @@ function getEasternTime()
     return { currentHours, currentMinutes };
 }
 
+/**
+ * Returns true if the current time is before the given time obj (as created in getEasternTime()), false otherwise.
+ *
+ * @param {JSON} time
+ * @return {boolean} 
+ */
 function isBefore(time)
 {
     const { currentHours, currentMinutes } = getEasternTime();
@@ -991,6 +1112,12 @@ function isBefore(time)
     return false;
 }
 
+/**
+ *  Returns true if the current time is after the given time obj (as created in getEasternTime()), false otherwise.
+ *
+ * @param {JSON} time
+ * @return {boolean} 
+ */
 function isAfter(time)
 {
     const { currentHours, currentMinutes } = getEasternTime();
@@ -1003,6 +1130,12 @@ function isAfter(time)
     return false;
 }
 
+/**
+ * Gets the week number for the date's year
+ *
+ * @param {Date} date
+ * @return {number} 
+ */
 function getWeekNumber(date)
 {
     const startOfYear = new Date(date.getFullYear(), 0, 1);
@@ -1011,6 +1144,18 @@ function getWeekNumber(date)
     return weekNumber;
 }
 
+/**
+ * Gets the biweekly scheme based on the current value of this or next. 
+ * "first" refers to the first week of the calendar year, i.e. if the scheme
+ * is "first", then it's a biweekly schedule starting on the _first_ week. 
+ * "this" and "next" are relative to the current day today, for ease of UI.
+ * 
+ * Another way of looking at it is that "this" and "next" week are in relative
+ * terms, and "first" and "second" are in absolute terms.
+ *
+ * @param {string} thisNextInput "this" or "next"
+ * @return {string} "first" or "second"
+ */
 function getBiweeklyScheme(thisNextInput)
 {
     const currentWeek = getWeekNumber(new Date());
@@ -1027,6 +1172,13 @@ function getBiweeklyScheme(thisNextInput)
     return "second";
 }
 
+/**
+ * With the given object, extract the most uniquely identifying possible combination
+ * of information.
+ *
+ * @param {JSON} jsonObject
+ * @return {JSON} 
+ */
 function getMaximumIdentifier(jsonObject)
 {
     return Object.keys(jsonObject)

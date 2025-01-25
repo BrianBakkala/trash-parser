@@ -9,7 +9,7 @@ const jsonHeader = header('Content-Type', 'application/json');;
 
 // answers to any request
 server({ security: { csrf: false } }, [
-    get('/', ctx => jsonHeader, ctx => process.env.ENV_TEST + "\n Environment: " + process.env.NODE_ENV),
+    get('/', ctx => jsonHeader, ctx => process.env.ENV_TEST + "\n" + "Environment: " + process.env.NODE_ENV),
     get('/privacy-policy', ctx => render('privacy_policy.html')),
     get('/favicon.ico', ctx => jsonHeader, ctx => 'Hello'),
 
@@ -129,6 +129,9 @@ server({ security: { csrf: false } }, [
             return await checkAuth(ctx,
                 async function (ctx)
                 {
+                    console.log("@@@@@@");
+                    console.log(ctx.data.verification_key, ctx.data.device_uuid);
+                    console.log("@@@@@@");
                     return await fb.addProvisioningBindicator(ctx.data.verification_key, ctx.data.device_uuid);
                 });
         }
@@ -184,32 +187,33 @@ server({ security: { csrf: false } }, [
         }
     ),
 
-    // test
-    get('/hooks/global-power-cycle', ctx => jsonHeader,
-        async function (ctx)
-        {
-            return await checkAuth(ctx,
-                async function (ctx)
-                {
-                    return await fb.globalPowerCycle();
-                });
-        }
-    ),
     // get('/hooks/override/:category/:value', ctx => jsonHeader, async ctx => await fb.setButtonStatesForAllBindicators(ctx.params.category, JSON.parse(ctx.params.value))),
 
 ]);
 
-function isLocal()
+/**
+ * checks if we are in dev env
+ *
+ * @return {boolean} 
+ */
+function isDev()
 {
-    return process.env.ENV_TEST === 'dev';
+    return process.env.NODE_ENV === 'development';
 }
 
-
+/**
+ * authenticates request.
+ *
+ * @param {*} ctx request context
+ * @param {function} callback 
+ * @return {JSON} object with request response (and other data?)
+ */
 async function checkAuth(ctx, callback)
 {
-    if (isLocal())
+    //short-circuit if dev env
+    if (isDev())
     {
-        return true;
+        return { success: true, result: { ...await callback(ctx) } };
     }
 
     const authHeader = ctx.headers.authorization || ctx.headers.Authorization;
