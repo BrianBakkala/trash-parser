@@ -836,8 +836,6 @@ export async function checkSchedule(simpleResponse, householdId, resetButtonStat
     const todayDateString = d.toLocaleDateString('en-CA');
     const tomorrowDateString = tomorrow.toLocaleDateString('en-CA');
 
-
-
     let docGroup;
 
     if (!householdId)
@@ -856,36 +854,62 @@ export async function checkSchedule(simpleResponse, householdId, resetButtonStat
         {
             const data = doc.data();
 
+            // get hhid from individual doc
+            householdId = data.household_id;
 
-            //in case no hhid was specified, get hhid from individual doc
-            householdId = householdId ? householdId : data.household_id;
+            const newStates = {
+                trash: null,
+                recycle: null,
+            };
 
-            if (lightShouldTurnOn(data.trash_days, todayDateString, tomorrowDateString))
+            if (resetButtonStates)
             {
-                result.push({ householdId, trash_on: true });
-                setHouseholdButtonStates(householdId, "trash", true);
+                newStates.trash = false;
+                newStates.recycle = false;
             }
-            if (lightShouldTurnOn(data.recycle_days, todayDateString, tomorrowDateString))
+            else
             {
-                result.push({ householdId, recycle_on: true });
-                setHouseholdButtonStates(householdId, "recycle", true);
+                if (lightShouldTurnOff(data.trash_days, todayDateString, tomorrowDateString))
+                {
+                    newStates.trash = false;
+                }
+
+                //prioritize true
+                if (lightShouldTurnOn(data.trash_days, todayDateString, tomorrowDateString))
+                {
+                    newStates.trash = true;
+                }
+
+
+                if (lightShouldTurnOff(data.recycle_days, todayDateString, tomorrowDateString))
+                {
+                    newStates.recycle = false;
+                }
+
+                //prioritize true
+                if (lightShouldTurnOn(data.recycle_days, todayDateString, tomorrowDateString))
+                {
+                    newStates.recycle = true;
+                }
             }
 
-            if (resetButtonStates || lightShouldTurnOff(data.trash_days, todayDateString, tomorrowDateString))
+            if (newStates.trash !== null)
             {
-                result.push({ householdId, trash_on: false });
-                setHouseholdButtonStates(householdId, "trash", false);
+                setHouseholdButtonStates(householdId, "trash", newStates.trash);
+                result.push({ householdId, trash_on: newStates.trash });
+                console.log("::", "trash", newStates.trash);
+
             }
-            if (resetButtonStates || lightShouldTurnOff(data.recycle_days, todayDateString, tomorrowDateString))
+            if (newStates.recycle !== null)
             {
-                result.push({ householdId, recycle_on: false });
-                setHouseholdButtonStates(householdId, "recycle", false);
+                setHouseholdButtonStates(householdId, "recycle", newStates.recycle);
+                result.push({ householdId, recycle_on: newStates.recycle });
+                console.log("::", "recycle", newStates.recycle);
             }
 
         });
 
         console.log("#", "Schedule checked.");
-
 
         const response = simpleResponse ? {} : { result };
 

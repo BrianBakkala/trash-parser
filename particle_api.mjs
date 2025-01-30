@@ -45,7 +45,7 @@ export async function publishParticleEvent(token, eventName, eventData)
         {
             if (data.body.ok)
             {
-                console.log("#", "Event published succesfully");
+                console.log("#", "Event published succesfully", eventData);
                 return { success: true };
             }
         },
