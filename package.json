@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.mjs",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "mocha --experimental-modules",
     "start": "node index.mjs"
   },
   "repository": {
@@ -21,6 +21,11 @@
     "firebase-admin": "^13.0.1",
     "particle-api-js": "^11.1.1",
     "pdfreader-fixed": "git+https://github.com/BrianBakkala/npm-pdfreader-fixed.git",
-    "server": "^1.0.41"
+    "server": "^0.0.3",
+    "sinon": "^19.0.2"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "jsdoc": "^4.0.4"
   }
 }

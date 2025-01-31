@@ -10,13 +10,22 @@ import { DocumentReference } from 'firebase-admin/firestore';
 const require = createRequire(import.meta.url);
 const serviceAccount = require('./config/firebaseServiceAccountKey.json');
 
-const VERIFICATION_KEY_DELIMITER = ":: ::";
+export const VERIFICATION_KEY_DELIMITER = ":: ::";
 const IDENTIFICATION_KEYS = ['photon_id', 'monitoring_uuid', 'verification_key']; //sorted by desirability
 
-const db = await intializeFirebase();  //Firestore instance
+
+var particleToken; //Particle API token
+var db;  //Firestore instance
+
+
 
 async function intializeFirebase()
 {
+    if (db)
+    {
+        return;
+    }
+
     // Initialize Firebase with the service account key
     await admin.initializeApp({
         credential: admin.credential.cert(serviceAccount),
@@ -26,14 +35,20 @@ async function intializeFirebase()
     if (!!instance)
     {
         console.log("#", "Login to Firebase successful.");
-        return instance;
+        db = instance;
     }
     console.error("#", "Login to Firebase failed.");
 
 
 }
 
-var particleToken = await papi.particleAuth(); //particle connection
+async function initializeParticleAPI()
+{
+    if (!particleToken)
+    {
+        particleToken = await papi.particleAuth(); //particle connection
+    }
+}
 
 
 
@@ -56,6 +71,7 @@ var particleToken = await papi.particleAuth(); //particle connection
  */
 export async function getBindicatorDocument(obj, forceNewDoc = false)
 {
+    await intializeFirebase();
     const collection = db.collection('bindicators');
 
     const key = IDENTIFICATION_KEYS.find(k => obj.hasOwnProperty(k));
@@ -89,6 +105,7 @@ export async function getBindicatorDocument(obj, forceNewDoc = false)
  */
 export async function getHouseholdDocument(householdId, forceNewDoc = false)
 {
+    await intializeFirebase();
     const collection = db.collection('households');
 
     const snapshot = await collection.where('household_id', '==', householdId).get();
@@ -113,6 +130,7 @@ export async function getHouseholdDocument(householdId, forceNewDoc = false)
  */
 async function getAllHouseholdIds()
 {
+    await intializeFirebase();
     try
     {
         const uniqueHouseholdIds = new Set();
@@ -270,6 +288,7 @@ export async function onboardBindicator(bindicatorDoc, photonId)
  */
 export async function getBindicators(householdId)
 {
+    await intializeFirebase();
     try
     {
         const querySnapshot = await db.collection('bindicators')
@@ -548,6 +567,7 @@ export async function getBindicatorData(identificationKeyObj)
 }
 export async function updateBindicatorData(dataObj)
 {
+    await intializeFirebase();
 
     const key = IDENTIFICATION_KEYS.find(k => dataObj.hasOwnProperty(k));
     if (!key)
@@ -669,6 +689,8 @@ export async function setButtonState(identificationKeyObj, category, value = nul
 
 async function setButtonStatesForDocumentGroup(docGroup, category, value) 
 {
+    await intializeFirebase();
+
     return new Promise(async (resolve, reject) =>
     {
         if (!docGroup.empty)
@@ -699,6 +721,8 @@ async function setButtonStatesForDocumentGroup(docGroup, category, value)
 
 async function setHouseholdButtonStates(household, category, value = null) 
 {
+    await intializeFirebase();
+
     return new Promise(async (resolve, reject) =>
     {
         setButtonStatesForDocumentGroup(
@@ -744,6 +768,8 @@ async function publishButtonPressEvent(household_id, category, value, relevantDa
 
 export async function generateTrashRecycleDays(householdId)
 {
+    await intializeFirebase();
+
     try
     {
         let snap;
@@ -829,6 +855,8 @@ export async function generateTrashRecycleDays(householdId)
  */
 export async function checkSchedule(simpleResponse, householdId, resetButtonStates = false)
 {
+    await intializeFirebase();
+
     let result = [];
     const d = new Date();
     const tomorrow = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1);
@@ -986,6 +1014,8 @@ export async function whoAmI(photonData)
 
 export async function getAPIAuth()
 {
+    await intializeFirebase();
+
     const doc = await db.collection('api_auth').doc('auth').get();
     return doc.data();
 }
@@ -995,6 +1025,7 @@ export async function getAPIAuth()
 
 async function publishParticleEvent(eventName, eventData)
 {
+    initializeParticleAPI();
     const procedure = (token) =>
     {
         papi.publishParticleEvent(token, eventName, eventData);
@@ -1046,7 +1077,7 @@ export async function globalPowerCycle()
  *
  * @return {String} uuid string 
  */
-function uuid()
+export function uuid()
 {
     return crypto.randomUUID();
 }
@@ -1064,7 +1095,7 @@ function uuid()
  * @param {String} setupCode
  * @return {String} the verification key 
  */
-function createVerificationKey(ssid, setupCode)
+export function createVerificationKey(ssid, setupCode)
 {
     return btoa(btoa(setupCode.toLowerCase()) + VERIFICATION_KEY_DELIMITER + btoa(ssid));
 }
@@ -1075,7 +1106,7 @@ function createVerificationKey(ssid, setupCode)
  * @param {*} verificationKey
  * @return {JSON} object containing the two parts, the ssid and the setup code 
  */
-function parseVerificationKey(verificationKey)
+export function parseVerificationKey(verificationKey)
 {
     const [setup_code, ssid] = atob(verificationKey).split(VERIFICATION_KEY_DELIMITER)
         .map(x => atob(x));
@@ -1090,7 +1121,7 @@ function parseVerificationKey(verificationKey)
  * @param {Array} array2
  * @return {boolean} 
  */
-function haveCommonElement(array1, array2)
+export function haveCommonElement(array1, array2)
 {
     const set1 = new Set(array1);
     return array2.some(element => set1.has(element));
@@ -1102,7 +1133,7 @@ function haveCommonElement(array1, array2)
  *
  * @return {JSON} object with current hours and current minutes 
  */
-function getEasternTime()
+export function getEasternTime()
 {
     // Get the current time and convert to US Eastern Time
     const now = new Date();
@@ -1124,7 +1155,7 @@ function getEasternTime()
  * @param {JSON} time
  * @return {boolean} 
  */
-function isBefore(time)
+export function isBefore(time)
 {
     const { currentHours, currentMinutes } = getEasternTime();
     const [inputHours, inputMinutes] = time.split(":").map(Number);
@@ -1142,7 +1173,7 @@ function isBefore(time)
  * @param {JSON} time
  * @return {boolean} 
  */
-function isAfter(time)
+export function isAfter(time)
 {
     const { currentHours, currentMinutes } = getEasternTime();
     const [inputHours, inputMinutes] = time.split(":").map(Number);
@@ -1160,7 +1191,7 @@ function isAfter(time)
  * @param {Date} date
  * @return {number} 
  */
-function getWeekNumber(date)
+export function getWeekNumber(date)
 {
     const startOfYear = new Date(date.getFullYear(), 0, 1);
     const daysSinceStartOfYear = Math.floor((date - startOfYear) / (1000 * 60 * 60 * 24));
@@ -1180,7 +1211,7 @@ function getWeekNumber(date)
  * @param {string} thisNextInput "this" or "next"
  * @return {string} "first" or "second"
  */
-function getBiweeklyScheme(thisNextInput)
+export function getBiweeklyScheme(thisNextInput)
 {
     const currentWeek = getWeekNumber(new Date());
     const nextWeek = currentWeek + 1;
@@ -1203,7 +1234,7 @@ function getBiweeklyScheme(thisNextInput)
  * @param {JSON} jsonObject
  * @return {JSON} 
  */
-function getMaximumIdentifier(jsonObject)
+export function getMaximumIdentifier(jsonObject)
 {
     return Object.keys(jsonObject)
         .filter(key => IDENTIFICATION_KEYS.includes(key))
@@ -1213,4 +1244,9 @@ function getMaximumIdentifier(jsonObject)
             return filteredObj;
         }, {});
 
+}
+
+export function sum(num1, num2)
+{
+    return num1 + num2;
 }
